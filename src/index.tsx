@@ -1,4 +1,4 @@
-import preact, { render, h } from "preact";
+import { render, h } from "preact";
 import App from "./App";
 
 const root = document.getElementById("app");
