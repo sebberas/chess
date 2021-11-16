@@ -13,7 +13,7 @@ pub enum Piece {
     None,
 }
 
-// (1, a) er nede til venstre. (8, h) er oppe til hoejre.
+// (1, A) / (0, 0) er nede til venstre. (8, H) / (7, 7) er oppe til højre.
 const BOARD_SIZE: u8 = 8;
 
 fn pos_to_u16(x: u8, y: u8) -> u16 {
