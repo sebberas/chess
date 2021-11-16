@@ -16,8 +16,8 @@ pub enum Piece {
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
-    WHITE,
-    BLACK,
+    White,
+    Black,
 }
 use Color::*;
 
@@ -38,7 +38,7 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
 
     match piece {
         Piece::Pawn => {
-            if color == WHITE {
+            if color == White {
                 buffer.push(pos_to_u16(pos[0], pos[1] + 1));
                 if pos[1] == 2 {
                     buffer.push(pos_to_u16(pos[0], pos[1] + 2));
@@ -51,11 +51,20 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
             }
         }
         Piece::Queen => todo!(),
-        Piece::King => todo!(),
+        Piece::King => {
+           buffer.push(pos_to_u16(pos[0]-1, pos[1]))
+           buffer.push(pos_to_u16(pos[0]-1, pos[1]+1))
+           buffer.push(pos_to_u16(pos[0], pos[1]+1))
+           buffer.push(pos_to_u16(pos[0]+1, pos[1]+1))
+           buffer.push(pos_to_u16(pos[0]+1, pos[1]))
+           buffer.push(pos_to_u16(pos[0]+1, pos[1]-1))
+           buffer.push(pos_to_u16(pos[0], pos[1]-1))
+           buffer.push(pos_to_u16(pos[0]-1, pos[1]-1))
+        }
         Piece::Knight => todo!(),
         Piece::Bishop => todo!(),
         Piece::Rook => todo!(),
-        Piece::None => todo!(),
+        Piece::None => {}
     }
 
     return buffer;
