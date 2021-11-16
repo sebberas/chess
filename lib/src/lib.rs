@@ -1,3 +1,4 @@
+use js_sys;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -10,6 +11,17 @@ pub enum Piece {
     Bishop,
     Rook,
     None,
+}
+
+const BOARD_SIZE: u8 = 8;
+
+type Pos = js_sys::Uint8Array;
+
+#[wasm_bindgen]
+pub fn valid_moves(p: Piece, pos: Pos) -> Vec<Pos> {
+    let mut not_gay_array = [0; 2];
+    pos.copy_to(&mut not_gay_array);
+    unimplemented!();
 }
 
 #[wasm_bindgen]
