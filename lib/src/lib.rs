@@ -13,14 +13,19 @@ pub enum Piece {
     None,
 }
 
+// (1, a) er nede til venstre. (8, h) er oppe til hoejre.
 const BOARD_SIZE: u8 = 8;
 
-type Pos = js_sys::Uint8Array;
+fn pos_to_u16(x: u8, y: u8) -> u16 {
+    let mut buffer = [0; 2];
+    buffer[0] = x;
+    buffer[1] = y;
+    u16::from_ne_bytes(buffer)
+}
 
 #[wasm_bindgen]
-pub fn valid_moves(piece: Piece, pos: Pos) -> Vec<Pos> {
-    let mut not_gay_array = [0; 2];
-    pos.copy_to(&mut not_gay_array);
+pub fn valid_moves(piece: Piece, pos: u16, color: bool) -> Vec<u16> {
+    let mut not_gay_array = pos.to_ne_bytes();
     let mut buffer = vec![];
 
     match piece {
