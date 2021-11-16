@@ -15,6 +15,7 @@
     "@snowpack/plugin-postcss": "^1.4.3",
     "@snowpack/plugin-typescript": "^1.2.1",
     "autoprefixer": "^10.3.7",
+    "inline-svg": "./plugins/inline-svg",
     "postcss": "^8.3.9",
     "snowpack": "^3.8.8",
     "tailwindcss": "^2.2.16",
