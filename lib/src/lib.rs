@@ -52,14 +52,14 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
         }
         Piece::Queen => todo!(),
         Piece::King => {
-           buffer.push(pos_to_u16(pos[0]-1, pos[1]))
-           buffer.push(pos_to_u16(pos[0]-1, pos[1]+1))
-           buffer.push(pos_to_u16(pos[0], pos[1]+1))
-           buffer.push(pos_to_u16(pos[0]+1, pos[1]+1))
-           buffer.push(pos_to_u16(pos[0]+1, pos[1]))
-           buffer.push(pos_to_u16(pos[0]+1, pos[1]-1))
-           buffer.push(pos_to_u16(pos[0], pos[1]-1))
-           buffer.push(pos_to_u16(pos[0]-1, pos[1]-1))
+            buffer.push(pos_to_u16(pos[0] - 1, pos[1]));
+            buffer.push(pos_to_u16(pos[0] - 1, pos[1] + 1));
+            buffer.push(pos_to_u16(pos[0], pos[1] + 1));
+            buffer.push(pos_to_u16(pos[0] + 1, pos[1] + 1));
+            buffer.push(pos_to_u16(pos[0] + 1, pos[1]));
+            buffer.push(pos_to_u16(pos[0] + 1, pos[1] - 1));
+            buffer.push(pos_to_u16(pos[0], pos[1] - 1));
+            buffer.push(pos_to_u16(pos[0] - 1, pos[1] - 1));
         }
         Piece::Knight => todo!(),
         Piece::Bishop => todo!(),
