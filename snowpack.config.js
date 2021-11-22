@@ -8,7 +8,11 @@ module.exports = {
     public: "/",
     /* ... */
   },
-  plugins: ["@snowpack/plugin-typescript", "@snowpack/plugin-postcss"],
+  plugins: [
+    "inline-svg",
+    "@snowpack/plugin-typescript",
+    "@snowpack/plugin-postcss",
+  ],
   packageOptions: {
     /* ... */
   },
