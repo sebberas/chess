@@ -1,5 +1,6 @@
 import { render, h } from "preact";
 import App from "./App";
+import "preact/debug";
 
 const root = document.getElementById("app");
 

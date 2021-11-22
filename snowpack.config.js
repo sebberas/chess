@@ -20,6 +20,7 @@ module.exports = {
     tailwindConfig: "./tailwind.config.js",
   },
   buildOptions: {
-    /* ... */
+    jsxFactory: "h",
+    jsxFragment: "Fragment",
   },
 };
