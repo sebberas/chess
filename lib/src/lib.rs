@@ -189,19 +189,54 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
     buffer
         .iter()
         .filter(|n| {
-            //if n.to_u16() == u16::MAX {
-            //    #[cfg(target_family = "wasm")]
-            //    unsafe {
-            //        use web_sys::console;
-            //        console::log_1(&"crab_engine Error: Pos to u16 conversion error".into());
-            //    }
-            //    #[cfg(not(target_family = "wasm"))]
-            //    println!("Error: Pos to u16 conversion error")
-            //}
+            if n.to_u16() == u16::MAX {
+                //#[cfg(target_family = "wasm")]
+                //unsafe {
+                //    log("crab_engine Error: Pos to u16 conversion error");
+                //}
+                #[cfg(not(target_family = "wasm"))]
+                println!("Error: Pos to u16 conversion error")
+            }
             n.to_u16() != u16::MAX
         })
         .map(|n| n.to_u16())
         .collect()
+}
+
+#[derive(Clone, Copy)]
+struct Board([[(Piece, Color); 8]; 8]);
+
+impl Board {
+    fn winner(&self) -> Option<Color> {
+        if !self.0.iter().flatten().any(|n| n.1 == White) {
+            return Some(Black);
+        } else if !self.0.iter().flatten().any(|n| n.1 == Black) {
+            return Some(White);
+        }
+        None
+    }
+}
+
+fn can_move(piece: Piece, pos: Pos, color: Color, board: Board) -> Vec<Pos> {
+    unimplemented!();
+}
+
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+
+    // The `console.log` is quite polymorphic, so we can bind it with multiple
+    // signatures. Note that we need to use `js_name` to ensure we always call
+    // `log` in JS.
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_u32(a: u32);
+
+    // Multiple arguments too!
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_many(a: &str, b: &str);
 }
 
 // Main function for debugging
@@ -210,15 +245,15 @@ pub fn main() {
     let mut board = ['#'; 8 * 8];
 
     let p = Piece::Knight;
-    for pos in valid_moves(p, Pos { x: 1, y: 1 }.to_u16(), White) {
+    for pos in valid_moves(p, Pos { x: 3, y: 3 }.to_u16(), White) {
         let pos = pos.to_ne_bytes();
         board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
     }
 
     for x in 0..8 {
         for y in 0..8 {
-            print!("{} ", board[x + y * 8]);
+            print!("{} ", board[(7 - x) + y * 8]);
         }
-        println!()
+        println!();
     }
 }
