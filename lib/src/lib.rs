@@ -24,6 +24,7 @@ use Color::*;
 // (1, A) / (0, 0) er nede til venstre. (8, H) / (7, 7) er oppe til højre.
 const BOARD_SIZE: i8 = 8;
 
+// The smallest possible integer is used to store cordinates, as values can only be between 0 and 8 anyways.
 #[derive(Copy, Clone, Debug)]
 struct Pos {
     x: i8,
@@ -31,10 +32,13 @@ struct Pos {
 }
 
 impl Pos {
+    // Bit magit, to encode a 2D vector into a u16, for easy interfacing with javascript.
     fn to_u16(&self) -> u16 {
         let x = self.x;
         let y = self.y;
         if x < 0 || y < 0 || x > 8 || y > 8 {
+            // If position is invalid, return 9 (This position does not corespond to any position on the board)
+            // The point here is to make some errors easier to spot in javascript. 9 means error.
             return 9;
         }
         let mut buffer = [0; 2];
@@ -51,6 +55,7 @@ impl Pos {
     }
 }
 
+// Returns a list of places a piece can move, when at s specific position.
 #[wasm_bindgen]
 pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
     let pos = Pos::from_u16(pos);
@@ -117,7 +122,7 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
                 y: pos.y - 1,
             });
         }
-        Piece::Knight => {
+        Piece::Rook => {
             for n in 0..8 {
                 if n != pos.x {
                     buffer.push(Pos { x: n, y: pos.y });
@@ -128,37 +133,54 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
             }
         }
         Piece::Bishop => {
-            for n in 0..8 {
-                if n != pos.x {
-                    buffer.push(Pos {
-                        x: n - pos.y,
-                        y: n - pos.y,
-                    });
-                }
-                if n != pos.y {
-                    buffer.push(Pos {
-                        x: n + pos.x,
-                        y: n + pos.y,
-                    });
-                }
+            for n in 1..8 {
+                buffer.push(Pos {
+                    x: pos.x - n,
+                    y: pos.y - n,
+                });
+
+                buffer.push(Pos {
+                    x: pos.x + n,
+                    y: pos.y + n,
+                });
+
+                buffer.push(Pos {
+                    x: pos.x + n,
+                    y: pos.y - n,
+                });
+
+                buffer.push(Pos {
+                    x: pos.x - n,
+                    y: pos.y + n,
+                });
             }
         }
 
-        Piece::Rook => todo!(),
+        Piece::Knight => {
+            let xmoves = [2, 1, -1, -2, -2, -1, 1, 2];
+            let ymoves = [1, 2, 2, 1, -1, -2, -2, -1];
+            for n in 0..8 {
+                let x = pos.x + n;
+                let y = pos.y + n;
+
+                //if x >= 0 && y >=0 && x <
+            }
+        }
         Piece::None => {}
     }
 
     buffer.iter().map(|n| n.to_u16()).collect()
 }
 
+// Main function for debugging
 #[wasm_bindgen]
 pub fn main() {
     let mut board = ['#'; 8 * 8];
 
     let p = Piece::Bishop;
-    for pos in valid_moves(p, Pos { x: 4, y: 4 }.to_u16(), White) {
+    for pos in valid_moves(p, Pos { x: 3, y: 3 }.to_u16(), White) {
         let pos = pos.to_ne_bytes();
-        board[(pos[0] + pos[1] * 8) as usize] = '.';
+        board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
     }
 
     for x in 0..8 {
@@ -167,9 +189,4 @@ pub fn main() {
         }
         println!()
     }
-}
-
-#[wasm_bindgen]
-pub fn positions() -> i32 {
-    return 1;
 }
