@@ -87,7 +87,40 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
                 }
             }
         }
-        Piece::Queen => todo!(),
+        Piece::Queen => {
+            for n in 0..8 {
+                if n != pos.x {
+                    buffer.push(Pos { x: n, y: pos.y });
+                }
+                if n != pos.y {
+                    buffer.push(Pos { x: pos.x, y: n });
+                }
+                if n!= 0{
+                buffer.push(Pos {
+                    x: pos.x - n,
+                    y: pos.y - n,
+                });
+
+                buffer.push(Pos {
+                    x: pos.x + n,
+                    y: pos.y + n,
+                });
+
+                buffer.push(Pos {
+                    x: pos.x + n,
+                    y: pos.y - n,
+                });
+
+                buffer.push(Pos {
+                    x: pos.x - n,
+                    y: pos.y + n,
+                });
+            }
+        }
+
+        }
+
+
         Piece::King => {
             buffer.push(Pos {
                 x: pos.x - 1,
@@ -177,7 +210,7 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
 pub fn main() {
     let mut board = ['#'; 8 * 8];
 
-    let p = Piece::Bishop;
+    let p = Piece::Queen;
     for pos in valid_moves(p, Pos { x: 3, y: 3 }.to_u16(), White) {
         let pos = pos.to_ne_bytes();
         board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
