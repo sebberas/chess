@@ -157,13 +157,23 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
         }
 
         Piece::Knight => {
-            let xmoves = [2, 1, -1, -2, -2, -1, 1, 2];
-            let ymoves = [1, 2, 2, 1, -1, -2, -2, -1];
-            for n in 0..8 {
-                let x = pos.x + n;
-                let y = pos.y + n;
+            let can_move_here = [
+                [0, 1, 0, 1, 0],
+                [1, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 1],
+                [0, 1, 0, 1, 0],
+            ];
 
-                //if x >= 0 && y >=0 && x <
+            for x in 0..5 {
+                for y in 0..5 {
+                    if can_move_here[x][y] == 1 {
+                        buffer.push(Pos {
+                            x: pos.x + x as i8 - 3,
+                            y: pos.y + y as i8 - 3,
+                        });
+                    }
+                }
             }
         }
         Piece::None => {}
@@ -177,8 +187,8 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
 pub fn main() {
     let mut board = ['#'; 8 * 8];
 
-    let p = Piece::Bishop;
-    for pos in valid_moves(p, Pos { x: 3, y: 3 }.to_u16(), White) {
+    let p = Piece::Knight;
+    for pos in valid_moves(p, Pos { x: 2, y: 2 }.to_u16(), White) {
         let pos = pos.to_ne_bytes();
         board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
     }
