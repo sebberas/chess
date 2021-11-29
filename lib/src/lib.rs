@@ -2,7 +2,7 @@ use js_sys;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Piece {
     Pawn,
     Queen,
@@ -45,8 +45,11 @@ impl Pos {
         buffer[0] = x as u8;
         buffer[1] = y as u8;
         u16::from_ne_bytes(buffer)
+        //self.x as u16 + self.y as u16 * 8
     }
     fn from_u16(pos: u16) -> Self {
+        //let x = pos as i8 % 8;
+        //let y = (pos as i8 - x) / 8;
         let pos = pos.to_ne_bytes();
         Self {
             x: pos[0] as i8,
@@ -55,145 +58,18 @@ impl Pos {
     }
 }
 
-macro_rules! console_log {
-    // Note that this is using the `log` function imported above during
-    // `bare_bones`
-    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
-}
-
 // Returns a list of places a piece can move, when at s specific position.
 #[wasm_bindgen]
 pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
-    let pos = Pos::from_u16(pos);
-    let mut buffer = vec![];
-
-    match piece {
-        Piece::Pawn => {
-            if color == White {
-                buffer.push(Pos {
-                    x: pos.x,
-                    y: pos.y + 1,
-                });
-                if pos.y == 2 {
-                    buffer.push(Pos {
-                        x: pos.x,
-                        y: pos.y + 2,
-                    });
-                }
-            } else {
-                buffer.push(Pos {
-                    x: pos.x,
-                    y: pos.y - 1,
-                });
-                if pos.y == 6 {
-                    buffer.push(Pos {
-                        x: pos.x,
-                        y: pos.y - 2,
-                    });
-                }
-            }
-        }
-        Piece::Queen => todo!(),
-        Piece::King => {
-            buffer.push(Pos {
-                x: pos.x - 1,
-                y: pos.y,
-            });
-            buffer.push(Pos {
-                x: pos.x - 1,
-                y: pos.y + 1,
-            });
-            buffer.push(Pos {
-                x: pos.x,
-                y: pos.y + 1,
-            });
-            buffer.push(Pos {
-                x: pos.x + 1,
-                y: pos.y + 1,
-            });
-            buffer.push(Pos {
-                x: pos.x + 1,
-                y: pos.y,
-            });
-            buffer.push(Pos {
-                x: pos.x + 1,
-                y: pos.y - 1,
-            });
-            buffer.push(Pos {
-                x: pos.x,
-                y: pos.y - 1,
-            });
-            buffer.push(Pos {
-                x: pos.x - 1,
-                y: pos.y - 1,
-            });
-        }
-        Piece::Rook => {
-            for n in 0..8 {
-                if n != pos.x {
-                    buffer.push(Pos { x: n, y: pos.y });
-                }
-                if n != pos.y {
-                    buffer.push(Pos { x: pos.x, y: n });
-                }
-            }
-        }
-        Piece::Bishop => {
-            for n in 1..8 {
-                buffer.push(Pos {
-                    x: pos.x - n,
-                    y: pos.y - n,
-                });
-
-                buffer.push(Pos {
-                    x: pos.x + n,
-                    y: pos.y + n,
-                });
-
-                buffer.push(Pos {
-                    x: pos.x + n,
-                    y: pos.y - n,
-                });
-
-                buffer.push(Pos {
-                    x: pos.x - n,
-                    y: pos.y + n,
-                });
-            }
-        }
-
-        Piece::Knight => {
-            // Bug with knight at 2, 2 og 1, 1
-            let can_move_here = [
-                [0, 1, 0, 1, 0],
-                [1, 0, 0, 0, 1],
-                [0, 0, 0, 0, 0],
-                [1, 0, 0, 0, 1],
-                [0, 1, 0, 1, 0],
-            ];
-
-            for x in 0..5 {
-                for y in 0..5 {
-                    if can_move_here[x][y] == 1 && (x != 3 || y != 3) {
-                        buffer.push(Pos {
-                            x: pos.x + x as i8 - 3,
-                            y: pos.y + y as i8 - 3,
-                        });
-                    }
-                }
-            }
-        }
-        Piece::None => {}
-    }
-
-    buffer
+    Pos::from_u16(pos)
+        .valid_moves(piece, color)
         .iter()
         .filter(|n| {
             if n.to_u16() == u16::MAX {
-                //#[cfg(target_family = "wasm")]
-                //unsafe {
-                //    log("crab_engine Error: Pos to u16 conversion error");
-                //}
+                #[cfg(target_family = "wasm")]
+                unsafe {
+                    log("crab_engine Error: Pos to u16 conversion error");
+                }
                 #[cfg(not(target_family = "wasm"))]
                 println!("Error: Pos to u16 conversion error")
             }
@@ -201,6 +77,134 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
         })
         .map(|n| n.to_u16())
         .collect()
+}
+
+impl Pos {
+    pub fn valid_moves(&self, piece: Piece, color: Color) -> Vec<Pos> {
+        let pos = self;
+        let mut buffer = vec![];
+
+        match piece {
+            Piece::Pawn => {
+                if color == White {
+                    buffer.push(Pos {
+                        x: pos.x,
+                        y: pos.y + 1,
+                    });
+                    if pos.y == 2 {
+                        buffer.push(Pos {
+                            x: pos.x,
+                            y: pos.y + 2,
+                        });
+                    }
+                } else {
+                    buffer.push(Pos {
+                        x: pos.x,
+                        y: pos.y - 1,
+                    });
+                    if pos.y == 6 {
+                        buffer.push(Pos {
+                            x: pos.x,
+                            y: pos.y - 2,
+                        });
+                    }
+                }
+            }
+            Piece::Queen => todo!(),
+            Piece::King => {
+                buffer.push(Pos {
+                    x: pos.x - 1,
+                    y: pos.y,
+                });
+                buffer.push(Pos {
+                    x: pos.x - 1,
+                    y: pos.y + 1,
+                });
+                buffer.push(Pos {
+                    x: pos.x,
+                    y: pos.y + 1,
+                });
+                buffer.push(Pos {
+                    x: pos.x + 1,
+                    y: pos.y + 1,
+                });
+                buffer.push(Pos {
+                    x: pos.x + 1,
+                    y: pos.y,
+                });
+                buffer.push(Pos {
+                    x: pos.x + 1,
+                    y: pos.y - 1,
+                });
+                buffer.push(Pos {
+                    x: pos.x,
+                    y: pos.y - 1,
+                });
+                buffer.push(Pos {
+                    x: pos.x - 1,
+                    y: pos.y - 1,
+                });
+            }
+            Piece::Rook => {
+                for n in 0..8 {
+                    if n != pos.x {
+                        buffer.push(Pos { x: n, y: pos.y });
+                    }
+                    if n != pos.y {
+                        buffer.push(Pos { x: pos.x, y: n });
+                    }
+                }
+            }
+            Piece::Bishop => {
+                for n in 1..8 {
+                    buffer.push(Pos {
+                        x: pos.x - n,
+                        y: pos.y - n,
+                    });
+
+                    buffer.push(Pos {
+                        x: pos.x + n,
+                        y: pos.y + n,
+                    });
+
+                    buffer.push(Pos {
+                        x: pos.x + n,
+                        y: pos.y - n,
+                    });
+
+                    buffer.push(Pos {
+                        x: pos.x - n,
+                        y: pos.y + n,
+                    });
+                }
+            }
+
+            Piece::Knight => {
+                // Bug with knight at 2, 2 og 1, 1
+                let can_move_here = [
+                    [0, 1, 0, 1, 0],
+                    [1, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 1],
+                    [0, 1, 0, 1, 0],
+                ];
+
+                for x in 0..5 {
+                    for y in 0..5 {
+                        if can_move_here[x][y] == 1 && (x != 3 || y != 3) {
+                            buffer.push(Pos {
+                                x: pos.x + x as i8 - 3,
+                                y: pos.y + y as i8 - 3,
+                            });
+                        }
+                    }
+                }
+            }
+            Piece::None => {}
+        }
+
+        buffer
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -215,10 +219,35 @@ impl Board {
         }
         None
     }
-}
 
-fn can_move(piece: Piece, pos: Pos, color: Color, board: Board) -> Vec<Pos> {
-    unimplemented!();
+    fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
+        let mut buffer = pos.valid_moves(piece, color);
+
+        let mut death_arrows: Vec<Box<dyn Fn(i8) -> i8>> = vec![];
+
+        buffer = buffer
+            .iter()
+            .filter(|mv| {
+                if mv.x > 8 || mv.x < 0 || mv.y > 8 || mv.y < 0 {
+                    return false;
+                }
+                if self.0[mv.x as usize][mv.y as usize].0 != Piece::None {
+                    let dx = mv.x - pos.x;
+                    let dy = mv.y - pos.y;
+                    let a = dy / dx;
+                    // sage: a,b,x,y = var('a b x y')
+                    // sage: solve(a * x + b == y, b)
+                    // [b == -a*x + y]
+                    // sage:
+                    let b = -a * pos.x + pos.y;
+                    death_arrows.push(Box::new(move |x: i8| x * a + b));
+                }
+                death_arrows.iter().any(|a| a(mv.x) != mv.y)
+            })
+            .copied()
+            .collect();
+        buffer
+    }
 }
 
 #[wasm_bindgen]
@@ -244,9 +273,12 @@ extern "C" {
 pub fn main() {
     let mut board = ['#'; 8 * 8];
 
-    let p = Piece::Knight;
-    for pos in valid_moves(p, Pos { x: 3, y: 3 }.to_u16(), White) {
-        let pos = pos.to_ne_bytes();
+    let mut game = Board([[(Piece::None, White); 8]; 8]);
+    game.0[3][3].0 = Piece::Pawn;
+    let p = Piece::Rook;
+
+    for pos in game.can_move(p, Pos { x: 3, y: 3 }, White) {
+        let pos = pos.to_u16().to_ne_bytes();
         board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
     }
 
