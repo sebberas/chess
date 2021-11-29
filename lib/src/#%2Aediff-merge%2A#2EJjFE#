@@ -110,38 +110,7 @@ impl Pos {
                     }
                 }
             }
-            Piece::Queen => {
-                for n in 0..8 {
-                    if n != pos.x {
-                        buffer.push(Pos { x: n, y: pos.y });
-                    }
-                    if n != pos.y {
-                        buffer.push(Pos { x: pos.x, y: n });
-                    }
-                    if n != 0 {
-                        buffer.push(Pos {
-                            x: pos.x - n,
-                            y: pos.y - n,
-                        });
-
-                        buffer.push(Pos {
-                            x: pos.x + n,
-                            y: pos.y + n,
-                        });
-
-                        buffer.push(Pos {
-                            x: pos.x + n,
-                            y: pos.y - n,
-                        });
-
-                        buffer.push(Pos {
-                            x: pos.x - n,
-                            y: pos.y + n,
-                        });
-                    }
-                }
-            }
-
+            Piece::Queen => todo!(),
             Piece::King => {
                 buffer.push(Pos {
                     x: pos.x - 1,
