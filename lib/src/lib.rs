@@ -39,7 +39,7 @@ impl Pos {
         if x < 0 || y < 0 || x > 8 || y > 8 {
             // If position is invalid, return 9 (This position does not corespond to any position on the board)
             // The point here is to make some errors easier to spot in javascript. 9 means error.
-            return 9;
+            return u16::MAX;
         }
         let mut buffer = [0; 2];
         buffer[0] = x as u8;
@@ -53,6 +53,12 @@ impl Pos {
             y: pos[1] as i8,
         }
     }
+}
+
+macro_rules! console_log {
+    // Note that this is using the `log` function imported above during
+    // `bare_bones`
+    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
 // Returns a list of places a piece can move, when at s specific position.
@@ -157,6 +163,7 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
         }
 
         Piece::Knight => {
+            // Bug with knight at 2, 2 og 1, 1
             let can_move_here = [
                 [0, 1, 0, 1, 0],
                 [1, 0, 0, 0, 1],
@@ -167,7 +174,7 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
 
             for x in 0..5 {
                 for y in 0..5 {
-                    if can_move_here[x][y] == 1 {
+                    if can_move_here[x][y] == 1 && (x != 3 || y != 3) {
                         buffer.push(Pos {
                             x: pos.x + x as i8 - 3,
                             y: pos.y + y as i8 - 3,
@@ -179,7 +186,22 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
         Piece::None => {}
     }
 
-    buffer.iter().map(|n| n.to_u16()).collect()
+    buffer
+        .iter()
+        .filter(|n| {
+            //if n.to_u16() == u16::MAX {
+            //    #[cfg(target_family = "wasm")]
+            //    unsafe {
+            //        use web_sys::console;
+            //        console::log_1(&"crab_engine Error: Pos to u16 conversion error".into());
+            //    }
+            //    #[cfg(not(target_family = "wasm"))]
+            //    println!("Error: Pos to u16 conversion error")
+            //}
+            n.to_u16() != u16::MAX
+        })
+        .map(|n| n.to_u16())
+        .collect()
 }
 
 // Main function for debugging
@@ -188,7 +210,7 @@ pub fn main() {
     let mut board = ['#'; 8 * 8];
 
     let p = Piece::Knight;
-    for pos in valid_moves(p, Pos { x: 2, y: 2 }.to_u16(), White) {
+    for pos in valid_moves(p, Pos { x: 1, y: 1 }.to_u16(), White) {
         let pos = pos.to_ne_bytes();
         board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
     }
