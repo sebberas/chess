@@ -1,4 +1,3 @@
-use js_sys;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -36,7 +35,7 @@ impl Pos {
     fn to_u16(&self) -> u16 {
         let x = self.x;
         let y = self.y;
-        if x < 0 || y < 0 || x > 8 || y > 8 {
+        if self.is_invalid() {
             // If position is invalid, return 9 (This position does not corespond to any position on the board)
             // The point here is to make some errors easier to spot in javascript. 9 means error.
             return u16::MAX;
@@ -55,6 +54,9 @@ impl Pos {
             x: pos[0] as i8,
             y: pos[1] as i8,
         }
+    }
+    fn is_invalid(&self) -> bool {
+        self.x < 0 || self.y < 0 || self.x >= 8 || self.y >= 8
     }
 }
 
@@ -252,32 +254,45 @@ impl Board {
     }
 
     fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
-        let mut buffer = pos.valid_moves(piece, color);
-
-        let mut death_arrows: Vec<Box<dyn Fn(i8) -> i8>> = vec![];
-
-        buffer = buffer
+        let buffer: Vec<_> = pos
+            .valid_moves(piece, color)
             .iter()
-            .filter(|mv| {
+            .filter(|mv| !mv.is_invalid())
+            .copied()
+            .collect();
+        let mut dead_vecs: Vec<(f32, f32, f32)> = vec![];
+
+        let vector_comp = |pos: &Pos, mv: &Pos| -> (f32, f32, f32) {
+            let mut dx = (pos.x - mv.x) as f32;
+            let mut dy = (pos.y - mv.y) as f32;
+
+            let len = ((dx.powi(2) + dy.powi(2)) as f32).sqrt();
+            dx = if len == 0. { 0. } else { dx / len };
+            dy = if len == 0. { 0. } else { dy / len };
+            (dx, dy, len)
+        };
+
+        for mv in &buffer {
+            let (dx, dy, len) = vector_comp(&pos, mv);
+            if self.0[mv.x as usize][mv.y as usize].0 != Piece::None {
+                dead_vecs.push((dx, dy, len));
+            }
+        }
+
+        buffer
+            .iter()
+            .filter(move |mv| {
                 if mv.x > 8 || mv.x < 0 || mv.y > 8 || mv.y < 0 {
                     return false;
                 }
-                if self.0[mv.x as usize][mv.y as usize].0 != Piece::None {
-                    let dx = mv.x - pos.x;
-                    let dy = mv.y - pos.y;
-                    let a = dy / dx;
-                    // sage: a,b,x,y = var('a b x y')
-                    // sage: solve(a * x + b == y, b)
-                    // [b == -a*x + y]
-                    // sage:
-                    let b = -a * pos.x + pos.y;
-                    death_arrows.push(Box::new(move |x: i8| x * a + b));
-                }
-                death_arrows.iter().any(|a| a(mv.x) != mv.y)
+                let (dx, dy, len) = vector_comp(&pos, mv);
+                // !dead_arrows.iter().any(|a| a(mv.x) == mv.y)
+                !dead_vecs
+                    .iter()
+                    .any(|(x, y, slen)| *x == dx && *y == dy && len > *slen)
             })
             .copied()
-            .collect();
-        buffer
+            .collect()
     }
 }
 
@@ -305,18 +320,28 @@ pub fn main() {
     let mut board = ['#'; 8 * 8];
 
     let mut game = Board([[(Piece::None, White); 8]; 8]);
-    game.0[3][3].0 = Piece::Pawn;
-    let p = Piece::Rook;
+    game.0[5][5].0 = Piece::Pawn;
+    game.0[1][6].0 = Piece::Pawn;
+    let p = Piece::Queen;
 
-    for pos in game.can_move(p, Pos { x: 3, y: 3 }, White) {
+    for pos in game.can_move(p, Pos { x: 3, y: 5 }, White) {
         let pos = pos.to_u16().to_ne_bytes();
         board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
     }
 
-    for x in 0..8 {
-        for y in 0..8 {
-            print!("{} ", board[(7 - x) + y * 8]);
+    println!("A  B  C  D  E  F  G  H\n");
+    for y in 0..8 {
+        for x in 0..8 {
+            print!(
+                "{}{} ",
+                board[x + (7 - y) * 8],
+                if game.0[y][x].0 == Piece::Pawn {
+                    "<"
+                } else {
+                    " "
+                }
+            );
         }
-        println!();
+        println!(" {}", y);
     }
 }
