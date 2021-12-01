@@ -21,7 +21,6 @@ pub enum Color {
 use Color::*;
 
 // (1, A) / (0, 0) er nede til venstre. (8, H) / (7, 7) er oppe til højre.
-const BOARD_SIZE: i8 = 8;
 
 // The smallest possible integer is used to store cordinates, as values can only be between 0 and 8 anyways.
 #[derive(Copy, Clone, Debug)]
@@ -244,14 +243,14 @@ impl Pos {
 struct Board([[(Piece, Color); 8]; 8]);
 
 impl Board {
-    fn winner(&self) -> Option<Color> {
-        if !self.0.iter().flatten().any(|n| n.1 == White) {
-            return Some(Black);
-        } else if !self.0.iter().flatten().any(|n| n.1 == Black) {
-            return Some(White);
-        }
-        None
-    }
+    //fn winner(&self) -> Option<Color> {
+    //    if !self.0.iter().flatten().any(|n| n.1 == White) {
+    //        return Some(Black);
+    //    } else if !self.0.iter().flatten().any(|n| n.1 == Black) {
+    //        return Some(White);
+    //    }
+    //    None
+    //}
 
     fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
         let buffer: Vec<_> = pos
@@ -269,7 +268,7 @@ impl Board {
             let len = ((dx.powi(2) + dy.powi(2)) as f32).sqrt();
             dx = if len == 0. { 0. } else { dx / len };
             dy = if len == 0. { 0. } else { dy / len };
-            (dx, dy, len)
+            (dx.floor(), dy.floor(), len.floor())
         };
 
         for mv in &buffer {
@@ -321,7 +320,8 @@ pub fn main() {
 
     let mut game = Board([[(Piece::None, White); 8]; 8]);
     game.0[5][5].0 = Piece::Pawn;
-    game.0[1][6].0 = Piece::Pawn;
+    game.0[2][3].0 = Piece::Pawn;
+    game.0[2][6].0 = Piece::Pawn;
     let p = Piece::Queen;
 
     for pos in game.can_move(p, Pos { x: 3, y: 5 }, White) {
@@ -334,7 +334,7 @@ pub fn main() {
         for x in 0..8 {
             print!(
                 "{}{} ",
-                board[x + (7 - y) * 8],
+                board[x + y * 8],
                 if game.0[y][x].0 == Piece::Pawn {
                     "<"
                 } else if x == 3 && y == 5 {
