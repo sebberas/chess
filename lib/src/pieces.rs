@@ -97,7 +97,7 @@ impl Pos {
                         x: pos.x,
                         y: pos.y + 1,
                     });
-                    if pos.y == 2 {
+                    if pos.y == 1 {
                         buffer.push(Pos {
                             x: pos.x,
                             y: pos.y + 2,
