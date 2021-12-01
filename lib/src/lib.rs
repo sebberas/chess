@@ -38,7 +38,6 @@ impl Board {
         for mv in &buffer {
             let (dx, dy, len) = vector_comp(&pos, mv);
             if self.0[mv.x as usize][mv.y as usize].0 != Piece::None {
-                println!("{:?} : {:?}", (mv.x, mv.y), (dx, dy, len));
                 dead_vecs.push((dx, dy, len, self.0[mv.x as usize][mv.y as usize].1));
             }
         }
