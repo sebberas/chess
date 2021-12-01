@@ -1,5 +1,7 @@
+//using the web-assembly crate to translate rust into javascript
 use wasm_bindgen::prelude::*;
 
+//creating our chesspieces
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Piece {
@@ -12,6 +14,7 @@ pub enum Piece {
     None,
 }
 
+//creating color, so the AI will know what it'll be able to attack
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
@@ -81,11 +84,13 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
 }
 
 impl Pos {
+    //creating valid chessmoves for the pieces, so the AI will know what it is able to do with the different pieces
     pub fn valid_moves(&self, piece: Piece, color: Color) -> Vec<Pos> {
         let pos = self;
         let mut buffer = vec![];
 
         match piece {
+            //writing the pawn. Hardcoding the doublemove a pawn is able to do when it hasn't moved yet, therefore this is the only piece that needs to know what color it is before moving
             Piece::Pawn => {
                 if color == White {
                     buffer.push(Pos {
@@ -111,6 +116,7 @@ impl Pos {
                     }
                 }
             }
+            // writing the Queen, which is a combination of the Rook and the Bishop
             Piece::Queen => {
                 for n in 0..8 {
                     if n != pos.x {
@@ -142,7 +148,7 @@ impl Pos {
                     }
                 }
             }
-
+            //writing the king, who is hardcoded to only move one space at a time
             Piece::King => {
                 buffer.push(Pos {
                     x: pos.x - 1,
@@ -177,6 +183,7 @@ impl Pos {
                     y: pos.y - 1,
                 });
             }
+
             Piece::Rook => {
                 for n in 0..8 {
                     if n != pos.x {
@@ -210,7 +217,7 @@ impl Pos {
                     });
                 }
             }
-
+            //writing the knight, because of the piece's special way to move, it made sense to make it check for validmoves by turning the board into a matrix
             Piece::Knight => {
                 // Bug with knight at 2, 2 og 1, 1
                 let can_move_here = [
@@ -232,6 +239,7 @@ impl Pos {
                     }
                 }
             }
+            //making sure that spot on the board without a piece is read correctly
             Piece::None => {}
         }
 
