@@ -337,6 +337,8 @@ pub fn main() {
                 board[x + (7 - y) * 8],
                 if game.0[y][x].0 == Piece::Pawn {
                     "<"
+                } else if x == 3 && y == 5 {
+                    "Q"
                 } else {
                     " "
                 }
