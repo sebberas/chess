@@ -18,20 +18,20 @@ pub enum Color {
     White,
     Black,
 }
-use Color::*;
+pub use Color::*;
 
 // (1, A) / (0, 0) er nede til venstre. (8, H) / (7, 7) er oppe til højre.
 
 // The smallest possible integer is used to store cordinates, as values can only be between 0 and 8 anyways.
 #[derive(Copy, Clone, Debug)]
-struct Pos {
-    x: i8,
-    y: i8,
+pub struct Pos {
+    pub x: i8,
+    pub y: i8,
 }
 
 impl Pos {
     // Bit magit, to encode a 2D vector into a u16, for easy interfacing with javascript.
-    fn to_u16(&self) -> u16 {
+    pub fn to_u16(&self) -> u16 {
         let x = self.x;
         let y = self.y;
         if self.is_invalid() {
@@ -45,7 +45,7 @@ impl Pos {
         u16::from_ne_bytes(buffer)
         //self.x as u16 + self.y as u16 * 8
     }
-    fn from_u16(pos: u16) -> Self {
+    pub fn from_u16(pos: u16) -> Self {
         //let x = pos as i8 % 8;
         //let y = (pos as i8 - x) / 8;
         let pos = pos.to_ne_bytes();
@@ -54,7 +54,7 @@ impl Pos {
             y: pos[1] as i8,
         }
     }
-    fn is_invalid(&self) -> bool {
+    pub fn is_invalid(&self) -> bool {
         self.x < 0 || self.y < 0 || self.x >= 8 || self.y >= 8
     }
 }
