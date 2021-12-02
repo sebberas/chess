@@ -1,8 +1,7 @@
-//using the web-assembly crate to translate rust into javascript
-use crate::log;
+//using the web-assembly bindings crate to talk to javascript in rust
 use wasm_bindgen::prelude::*;
 
-//creating our chesspieces
+//defining our chesspieces
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Piece {
@@ -15,7 +14,7 @@ pub enum Piece {
     None,
 }
 
-//creating color, so the AI will know what it'll be able to attack
+//defining color, so the AI will know what it'll be able to attack, and for use in the chess game logic (chess engine)
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
@@ -24,9 +23,9 @@ pub enum Color {
 }
 pub use Color::*;
 
-// (1, A) / (0, 0) er nede til venstre. (8, H) / (7, 7) er oppe til højre.
+// (1, A) / (0, 0) er nede til venstre. (8, H) / (7, 7) er oppe til højre
 
-// The smallest possible integer is used to store cordinates, as values can only be between 0 and 8 anyways.
+// The smallest possible integer is used to store cordinates, as values can only be between 0 and 8 anyways
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Pos {
     pub x: i8,
@@ -34,13 +33,13 @@ pub struct Pos {
 }
 
 impl Pos {
-    // Bit magit, to encode a 2D vector into a u16, for easy interfacing with javascript.
+    // Bit magit, to encode a 2D vector into a u16, for easy interfacing with javascript
     pub fn to_u16(&self) -> u16 {
         let x = self.x;
         let y = self.y;
         if self.is_invalid() {
             // If position is invalid, return 9 (This position does not corespond to any position on the board)
-            // The point here is to make some errors easier to spot in javascript. 9 means error.
+            // The point here is to make some errors easier to spot in javascript. 9 means error
             return u16::MAX;
         }
         let mut buffer = [0; 2];
@@ -63,7 +62,7 @@ impl Pos {
     }
 }
 
-// Returns a list of places a piece can move, when at s specific position.
+// Returns a list of places a piece can move, when at s specific position
 #[wasm_bindgen]
 pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
     Pos::from_u16(pos)
@@ -73,6 +72,7 @@ pub fn valid_moves(piece: Piece, pos: u16, color: Color) -> Vec<u16> {
             if n.to_u16() == u16::MAX {
                 #[cfg(target_family = "wasm")]
                 unsafe {
+                    use crate::log;
                     log("crab_engine Error: Pos to u16 conversion error");
                 }
                 #[cfg(not(target_family = "wasm"))]
@@ -149,7 +149,7 @@ impl Pos {
                     }
                 }
             }
-            //writing the king, who is hardcoded to only move one space at a time
+            //writing the king, who is hardcoded to only move one space at a time, in a circle around the king
             Piece::King => {
                 buffer.push(Pos {
                     x: pos.x - 1,
@@ -231,7 +231,7 @@ impl Pos {
 
                 for x in 0..5 {
                     for y in 0..5 {
-                        if can_move_here[x][y] == 1 && (x != 3 || y != 3) {
+                        if can_move_here[x][y] == 1 {
                             buffer.push(Pos {
                                 x: pos.x + x as i8 - 3,
                                 y: pos.y + y as i8 - 3,
