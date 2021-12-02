@@ -1,10 +1,28 @@
 use crate::*;
 
-fn winner(&Board) -> Option<Color> {
-    if !self.0.iter().flatten().any(|n| n.1 == White) {
-        return Some(Black);
-    } else if !self.0.iter().flatten().any(|n| n.1 == Black) {
-        return Some(White);
+struct GameState {
+    board: Board,
+    winner: Option<Color>,
+}
+
+impl GameState {
+    fn force_recheck_winner(&mut self) {
+        if !self
+            .board
+            .0
+            .iter()
+            .flatten()
+            .any(|n| n.0 == Piece::King && n.1 == White)
+        {
+            self.winner = Some(Black);
+        } else if !self
+            .board
+            .0
+            .iter()
+            .flatten()
+            .any(|n| n.0 == Piece::King && n.1 == Black)
+        {
+            self.winner = Some(White);
+        }
     }
-    None
 }
