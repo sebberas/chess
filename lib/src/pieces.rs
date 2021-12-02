@@ -1,4 +1,5 @@
 //using the web-assembly crate to translate rust into javascript
+use crate::log;
 use wasm_bindgen::prelude::*;
 
 //creating our chesspieces
@@ -26,7 +27,7 @@ pub use Color::*;
 // (1, A) / (0, 0) er nede til venstre. (8, H) / (7, 7) er oppe til højre.
 
 // The smallest possible integer is used to store cordinates, as values can only be between 0 and 8 anyways.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Pos {
     pub x: i8,
     pub y: i8,

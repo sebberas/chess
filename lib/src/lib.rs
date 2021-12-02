@@ -1,8 +1,10 @@
 use wasm_bindgen::prelude::*;
 
+mod deepblue;
 mod pieces;
 pub use pieces::*;
 
+#[wasm_bindgen]
 #[derive(Clone, Copy)]
 struct Board([[(Piece, Color); 8]; 8]);
 
@@ -61,6 +63,25 @@ impl Board {
             .copied()
             .collect()
     }
+
+    // returns true and moves piece if move is valid. Else returns false and does not move piece.
+    pub fn move_piece(&mut self, a: Pos, b: Pos) -> bool {
+        if a.is_invalid() || b.is_invalid() {
+            return false;
+        }
+        let p = self.0[a.x as usize][a.y as usize];
+        let can_move = self.can_move(p.0, a, p.1);
+
+        can_move.iter().any(|mv| {
+            if *mv == b {
+                self.0[a.x as usize][a.y as usize].0 = Piece::None;
+                self.0[b.x as usize][b.y as usize] = p;
+                true
+            } else {
+                false
+            }
+        })
+    }
 }
 
 #[wasm_bindgen]
@@ -76,7 +97,6 @@ extern "C" {
 }
 
 // Main function for debugging
-#[wasm_bindgen]
 pub fn main() {
     let mut board = [' '; 8 * 8];
 
@@ -112,4 +132,8 @@ pub fn main() {
         }
         println!(" {}", y);
     }
+}
+
+pub fn hello_world() {
+    unsafe { log("hello, world!") };
 }
