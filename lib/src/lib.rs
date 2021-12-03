@@ -65,17 +65,17 @@ impl Board {
     }
 
     // returns true and moves piece if move is valid. Else returns false and does not move piece.
-    pub fn move_piece(&mut self, a: Pos, b: Pos) -> bool {
-        if a.is_invalid() || b.is_invalid() {
+    pub fn move_piece(&mut self, mv: Move) -> bool {
+        if mv.0.is_invalid() || mv.1.is_invalid() {
             return false;
         }
-        let p = self.0[a.x as usize][a.y as usize];
-        let can_move = self.can_move(p.0, a, p.1);
+        let p = self.0[mv.0.x as usize][mv.0.y as usize];
+        let can_move = self.can_move(p.0, mv.0, p.1);
 
-        can_move.iter().any(|mv| {
-            if *mv == b {
-                self.0[a.x as usize][a.y as usize].0 = Piece::None;
-                self.0[b.x as usize][b.y as usize] = p;
+        can_move.iter().any(|can_mv| {
+            if *can_mv == mv.1 {
+                self.0[mv.0.x as usize][mv.0.y as usize].0 = Piece::None;
+                self.0[mv.1.x as usize][mv.1.y as usize] = p;
                 true
             } else {
                 false

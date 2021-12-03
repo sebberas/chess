@@ -32,6 +32,8 @@ pub struct Pos {
     pub y: i8,
 }
 
+pub type Move = (Pos, Pos);
+
 impl Pos {
     // Bit magit, to encode a 2D vector into a u16, for easy interfacing with javascript
     pub fn to_u16(&self) -> u16 {
