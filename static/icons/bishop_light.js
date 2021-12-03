@@ -1,4 +1,4 @@
-import {h} from "../../_snowpack/pkg/preact.js";
+import {h} from "../../snowpack/pkg/preact.js";
 export const Component = ({...props}) => {
   return /* @__PURE__ */ h("svg", {
     xmlns: "http://www.w3.org/2000/svg",

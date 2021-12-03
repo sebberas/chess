@@ -1,4 +1,4 @@
-import {h} from "../_snowpack/pkg/preact.js";
+import {h} from "../snowpack/pkg/preact.js";
 import {Component as PawnLightIcon} from "./icons/pawn_light.js";
 import {Component as PawnDarkIcon} from "./icons/pawn_dark.js";
 var PieceColor;

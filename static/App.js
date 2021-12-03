@@ -1,4 +1,4 @@
-import {h} from "../_snowpack/pkg/preact.js";
+import {h} from "../snowpack/pkg/preact.js";
 import Nav from "./Nav.js";
 import Board from "./Board.js";
 import init, {hello_world} from "./engine/crab_engine.js";

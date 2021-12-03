@@ -1,4 +1,4 @@
-import * as __SNOWPACK_ENV__ from '../../_snowpack/env.js';
+import * as __SNOWPACK_ENV__ from '../../snowpack/env.js';
 import.meta.env = __SNOWPACK_ENV__;
 
 

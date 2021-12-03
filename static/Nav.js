@@ -1,4 +1,4 @@
-import {h} from "../_snowpack/pkg/preact.js";
+import {h} from "../snowpack/pkg/preact.js";
 const Nav = () => {
   return /* @__PURE__ */ h("nav", {
     className: "h-12 shadow-md flex justify-center items-center"
