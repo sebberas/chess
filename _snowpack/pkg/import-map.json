@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "preact": "./preact.js",
+    "preact/debug": "./preact/debug.js"
+  }
+}

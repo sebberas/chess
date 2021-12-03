@@ -1,0 +1,12 @@
+{
+  "name": "crab_engine",
+  "version": "0.1.0",
+  "files": [
+    "crab_engine_bg.wasm",
+    "crab_engine.js",
+    "crab_engine.d.ts"
+  ],
+  "module": "crab_engine.js",
+  "types": "crab_engine.d.ts",
+  "sideEffects": false
+}
