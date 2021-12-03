@@ -6,6 +6,7 @@ module.exports = {
   mount: {
     src: "/static",
     public: "/",
+    "lib/pkg": "/static/engine",
     /* ... */
   },
   plugins: [
@@ -20,6 +21,8 @@ module.exports = {
     tailwindConfig: "./tailwind.config.js",
   },
   buildOptions: {
+    baseUrl: "chess",
+    metaUrlPath: "snowpack",
     jsxFactory: "h",
     jsxFragment: "Fragment",
   },

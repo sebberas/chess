@@ -1,10 +1,13 @@
 # Chess
 
+[Demo](https://bechiscul.github.io/chess/)
+
 # Building
 
-For at bygge projektet skal [Node](https://nodejs.org) og [Rust](https://www.rust-lang.org/tools/install) være installeret på ens computer.
+For at bygge projektet skal [Node](https://nodejs.org) og [Rust](https://www.rust-lang.org/tools/install) være installeret på ens computer. Desuden skal wasm-pack enten installeres med kommandoen `cargo install wasm-pack` eller gennem deres officielle hjemmeside.
 
-**Advarsel:** Det er vigtigt at både Node og Rust er tilføjet til dine miljøvariabler. Dette tillader at man blot kan skrive `node` eller `cargo` i terminalen. Ellers får man en ```'node' is not regocnized as an internal or external command.``` fejl.
+**Advarsel:** Det er vigtigt at både Node og Rust er tilføjet til dine miljøvariabler. Dette tillader at man blot kan skrive `node` eller `cargo` i terminalen.
+Ellers får man en ```'node' is not recognized as an internal or external command.``` fejl.
 
 Yarn installeres via NPM:
 
@@ -23,4 +26,4 @@ Til sidst køres en af følgende:
 - Produktionsmiljø: `yarn build`
 - Udviklingsmiljø (For at starte udviklingsserveren): `yarn start`
 
-**Note:** Produktionsmiljøet opretter en ny mappe kaldet `build`. I den mappe skal man enten åbne index.html eller starte en lokal server i den mappe. Eksempelvis med `Live Server` udvidelsen til Visual Studio Code. 
+**Note:** Produktionsmiljøet opretter en ny mappe kaldet `build`. I den mappe skal man starte en lokal server. Eksempelvis med `Live Server` udvidelsen til Visual Studio Code. 

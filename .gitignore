@@ -5,9 +5,15 @@ target/
 # Dependency files
 node_modules/
 
+# Package files
+pkg/
+
 # Log files
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# 
+~/
