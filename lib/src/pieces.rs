@@ -23,10 +23,22 @@ pub enum Color {
 }
 pub use Color::*;
 
+impl Color {
+    pub fn not(&self) -> Self {
+        match self {
+            Black => White,
+            White => Black,
+        }
+    }
+    pub fn invert(&mut self) {
+        *self = self.not();
+    }
+}
+
 // (1, A) / (0, 0) er nede til venstre. (8, H) / (7, 7) er oppe til højre
 
 // The smallest possible integer is used to store cordinates, as values can only be between 0 and 8 anyways
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Pos {
     pub x: i8,
     pub y: i8,
@@ -235,8 +247,8 @@ impl Pos {
                     for y in 0..5 {
                         if can_move_here[x][y] == 1 {
                             buffer.push(Pos {
-                                x: pos.x + x as i8 - 3,
-                                y: pos.y + y as i8 - 3,
+                                x: pos.x + x as i8 - 2,
+                                y: pos.y + y as i8 - 2,
                             });
                         }
                     }

@@ -1,12 +1,17 @@
+pub use rayon::prelude::*;
 use wasm_bindgen::prelude::*;
+
+#[cfg(target_family = "wasm")]
+pub use wasm_bindgen_rayon::init_thread_pool;
 
 mod deepblue;
 mod pieces;
 pub use pieces::*;
 
-#[wasm_bindgen]
+use crate::deepblue::Value;
+
 #[derive(Clone, Copy)]
-struct Board([[(Piece, Color); 8]; 8]);
+pub struct Board([[(Piece, Color); 8]; 8]);
 
 impl Board {
     fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
@@ -96,41 +101,105 @@ extern "C" {
     fn log_many(a: &str, b: &str);
 }
 
+macro_rules! gen_row {
+	($color: ident, $($p: tt)*) => {
+		[$(
+            (match stringify!($p){
+                "q" => Piece::Queen,
+                "*" => Piece::King,
+                "k" => Piece::Knight,
+                "r" => Piece::Rook,
+                "b" => Piece::Bishop,
+                _ => Piece::None,
+            }, $color)
+        ),*]
+	};
+}
+
+impl std::default::Default for Board {
+    fn default() -> Self {
+        let tmp = [
+            gen_row![White, r k b q * b k r],
+            [(Piece::Pawn, White); 8],
+            [(Piece::None, White); 8],
+            [(Piece::None, White); 8],
+            [(Piece::None, White); 8],
+            [(Piece::None, White); 8],
+            [(Piece::Pawn, Black); 8],
+            gen_row![Black, r k b * q b k r],
+        ];
+
+        let mut buffer = tmp.clone();
+
+        for x in 0..8 {
+            for y in 0..8 {
+                buffer[x][y] = tmp[y][x]
+            }
+        }
+
+        Self(buffer)
+    }
+}
+
 // Main function for debugging
 pub fn main() {
-    let mut board = [' '; 8 * 8];
+    use Value::*;
+    assert!(Num(0) > NegInf);
+    assert!(Num(0) < Inf);
+    assert!(NegInf < Inf);
+    //let mut board = [' '; 8 * 8];
 
-    let mut game = Board([[(Piece::None, White); 8]; 8]);
+    let mut game = deepblue::GameState::default();
+    game.winner = None;
+
     //game.0[5][5].0 = Piece::Pawn;
     //game.0[5][5].1 = Black;
     //game.0[2][3].0 = Piece::Pawn;
     //game.0[2][6].0 = Piece::Pawn;
-    game.0[3][2].0 = Piece::Pawn;
-    let p = Piece::Pawn;
-    let px = 3;
-    let py = 1;
+    //game.0[3][2].0 = Piece::Pawn;
+    //let p = Piece::Pawn;
+    //let px = 3;
+    //let py = 1;
 
-    for pos in game.can_move(p, Pos { x: px, y: py }, White) {
-        let pos = pos.to_u16().to_ne_bytes();
-        board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
-    }
+    //for pos in game.can_move(p, Pos { x: px, y: py }, White) {
+    //    let pos = pos.to_u16().to_ne_bytes();
+    //    board[(pos[0] + pos[1] * 8).min(63) as usize] = '.';
+    //}
 
-    println!("A  B  C  D  E  F  G  H\n");
-    for y in 0..8 {
-        for x in 0..8 {
-            print!(
-                "{}{} ",
-                board[x + y * 8],
-                if game.0[x][y].0 == Piece::Pawn {
-                    "<"
-                } else if x as i8 == px && y as i8 == py {
-                    "X"
-                } else {
-                    " "
-                }
-            );
+    let mut turn = Black;
+    while game.winner.is_none() {
+        turn.invert();
+        println!("\n\n");
+
+        let mv = game.simulate_til_win(turn, None, 0, 5);
+        game.board.move_piece(mv.mv);
+
+        println!("A  B  C  D  E  F  G  H\n");
+        for y in 0..8 {
+            for x in 0..8 {
+                use Piece::*;
+                print!(
+                    "{}{} ",
+                    match game.board.0[x][y].0 {
+                        Queen => 'Q',
+                        Knight => 'k',
+                        King => '*',
+                        Bishop => 'b',
+                        Rook => 'r',
+                        Pawn => 'p',
+                        None => '.',
+                    },
+                    if game.board.0[x][y].0 == None {
+                        ' '
+                    } else if game.board.0[x][y].1 == White {
+                        'w'
+                    } else {
+                        'b'
+                    }
+                );
+            }
+            println!(" {}", y);
         }
-        println!(" {}", y);
     }
 }
 
