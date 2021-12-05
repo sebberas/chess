@@ -101,7 +101,7 @@ impl GameState {
                     if color == White {
                         alpha.fetch_max(value.i32(), SeqCst);
                     } else {
-                        alpha.fetch_min(value.i32(), SeqCst);
+                        beta.fetch_min(value.i32(), SeqCst);
                     }
                     value
                 }),

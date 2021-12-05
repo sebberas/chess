@@ -202,7 +202,7 @@ pub fn main() {
         board_value = game.board.naive_value(turn);
         println!("\n\n Round {} - {:?}", round, board_value);
 
-        let action = game.best_move(turn, 4);
+        let action = game.best_move(turn, 8);
         game.board.move_piece(action);
 
         println!("A  B  C  D  E  F  G  H\n");
