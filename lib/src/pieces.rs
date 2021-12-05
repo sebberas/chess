@@ -261,3 +261,34 @@ impl Pos {
         buffer
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{Board, Color::*, Piece::*, Pos};
+
+    #[test]
+    fn pawn_attack() {
+        let mut b = Board::default();
+        b.0[1][2] = (Pawn, Black);
+        b.0[0][2] = (Pawn, Black);
+        let moves = b.can_move(Pawn, Pos { x: 0, y: 1 }, White);
+
+        assert!(
+            moves.iter().any(|p| *p == Pos { x: 1, y: 2 }),
+            "{:?}",
+            moves
+        );
+
+        assert!(
+            !moves.iter().any(|p| *p == Pos { x: 0, y: 2 }),
+            "{:?}",
+            moves
+        );
+
+        assert!(
+            !moves.iter().any(|p| *p == Pos { x: 0, y: 3 }),
+            "{:?}",
+            moves
+        );
+    }
+}

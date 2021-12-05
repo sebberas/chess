@@ -1,3 +1,8 @@
+use std::sync::{
+    atomic::{AtomicI32, Ordering::*},
+    Arc,
+};
+
 use crate::*;
 
 #[derive(Clone, Copy, Default)]
@@ -27,104 +32,96 @@ impl GameState {
         }
     }
 
-    pub fn get_valid_moves(&self, color: Color) -> Vec<Move> {
-        let mut buffer = vec![];
-        for y in 0..8 {
-            for x in 0..8 {
-                let piece = self.board.0[x][y];
+    pub fn get_valid_moves(&self, color: Color) -> impl ParallelIterator<Item = Move> + '_ {
+        (0..8 * 8)
+            .into_par_iter()
+            .filter_map(move |n| {
+                let x = n % 8;
+                let y = (n - x) / 8;
+                if self.board.0[x][y].1 != color {
+                    return None;
+                }
+
                 let pos = Pos {
                     x: x as i8,
                     y: y as i8,
                 };
-
-                if piece.1 == color {
-                    for mv in self.board.can_move(piece.0, pos, color) {
-                        buffer.push((pos, mv))
-                    }
-                }
-            }
-        }
-        buffer
+                let piece = self.board.0[x][y].0;
+                Some(
+                    self.board
+                        .can_move(piece, pos, color)
+                        .iter()
+                        .map(|action| (pos, *action))
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .flatten()
     }
 
-    pub fn simulate_til_win(
-        &mut self,
-        color: Color,
-        last_move: Option<Move>,
-        depth: usize,
-        max_depth: usize,
-    ) -> ValuedMove {
-        self.force_recheck_winner();
+    pub fn best_move(&mut self, color: Color, depth: usize) -> Move {
+        let alpha = Arc::new(AtomicI32::new(-i32::MAX));
 
-        let try_get_last_move = || {
-            if let Some(mv) = last_move {
-                mv
-            } else {
-                panic!("Last move is None")
-            }
-        };
+        maxormin(
+            self.get_valid_moves(color).map(|action| {
+                let mut sim = *self;
+                sim.board.move_piece(action);
 
-        if let Some(winner) = self.winner {
-            if last_move.is_none() {
-                panic!("Wut? {}", if depth == 0 { "Won instant" } else { "" })
-            }
-            let mv = try_get_last_move();
-            return if winner == color {
-                ValuedMove { mv, value: Inf }
-            } else {
-                ValuedMove { mv, value: NegInf }
-            };
+                let alpha = alpha.clone();
+                let value = sim.minimax(color.not(), depth, Num(alpha.load(SeqCst)), Inf);
+                alpha.fetch_max(value.i32(), SeqCst);
+
+                ValuedMove { value, action }
+            }),
+            color == White,
+        )
+        .unwrap()
+        .action
+    }
+
+    pub fn minimax(&mut self, color: Color, depth: usize, alpha: Value, beta: Value) -> Value {
+        let alpha = Arc::new(AtomicI32::new(alpha.i32()));
+        let beta = Arc::new(AtomicI32::new(beta.i32()));
+
+        if depth == 0 {
+            return self.board.naive_value(White);
         }
 
-        if depth >= max_depth {
-            return ValuedMove {
-                mv: try_get_last_move(),
-                value: self.board.naive_value(color),
-            };
-        }
+        maxormin(
+            self.get_valid_moves(color)
+                .filter(|_| beta.load(SeqCst) > alpha.load(SeqCst))
+                .map(|action| {
+                    let mut sim = *self;
+                    sim.board.move_piece(action);
+                    let value = sim.minimax(
+                        color.not(),
+                        depth - 1,
+                        Num(alpha.load(SeqCst)),
+                        Num(beta.load(SeqCst)),
+                    );
+                    if color == White {
+                        alpha.fetch_max(value.i32(), SeqCst);
+                    } else {
+                        alpha.fetch_min(value.i32(), SeqCst);
+                    }
+                    value
+                }),
+            color == White,
+        )
+        .unwrap_or(self.board.naive_value(White))
+    }
+}
 
-        {
-            let v = self.board.naive_value(color);
-            if v < Num(-200) {
-                return ValuedMove {
-                    mv: try_get_last_move(),
-                    value: v,
-                };
-            }
-        }
-
-        //let mut max_val = NegInf;
-        //let mut best_move = (Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-
-        let ValuedMove {
-            mv: best_move,
-            value: max_val,
-        } = self
-            .get_valid_moves(color)
-            .par_iter()
-            .map(|mv| {
-                let mut sim = self.clone();
-                sim.board.move_piece(*mv);
-                sim.simulate_til_win(color.not(), Some(*mv), depth + 1, max_depth)
-                // TODO: color.not() is wrong. This might be the time to implement alpha-beta pruning.
-            })
-            .max()
-            .unwrap();
-
-        ValuedMove {
-            mv: if let Some(mv) = last_move {
-                mv
-            } else {
-                best_move
-            },
-            value: max_val,
-        }
+fn maxormin<T: Ord>(i: impl ParallelIterator<Item = T>, is_max: bool) -> Option<T> {
+    if is_max {
+        i.max()
+    } else {
+        i.min()
     }
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct ValuedMove {
-    pub mv: Move,
+    pub action: Move,
     pub value: Value,
 }
 
@@ -140,7 +137,7 @@ impl Ord for ValuedMove {
     }
 }
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Ord, Eq, Clone, Copy, Debug)]
 pub enum Value {
     NegInf,
     Num(i32),
@@ -148,6 +145,27 @@ pub enum Value {
 }
 
 use Value::*;
+
+impl Value {
+    pub fn minus(&self, other: &Self) -> Self {
+        match self {
+            Inf => Inf,
+            NegInf => NegInf,
+            Num(l) => match other {
+                Inf => NegInf,
+                NegInf => Inf,
+                Num(r) => Num(l - r),
+            },
+        }
+    }
+    pub fn i32(&self) -> i32 {
+        match self {
+            Inf => i32::MAX,
+            NegInf => -i32::MAX,
+            Num(n) => *n,
+        }
+    }
+}
 
 pub fn piece_value(p: Piece) -> i32 {
     use Piece::*;
@@ -164,17 +182,18 @@ pub fn piece_value(p: Piece) -> i32 {
 
 impl Board {
     pub fn naive_value(&self, color: Color) -> Value {
-        let mut val = 0;
+        let mut a = 0;
+        let mut b = 0;
         let mut sk = false; // Does 'color' have a king?
         let mut ok = false; // Does other color have a king?
 
         for p in self.0.iter().flatten() {
             if p.1 == color {
                 sk = p.0 == Piece::King || sk;
-                val += piece_value(p.0);
+                a += piece_value(p.0);
             } else {
                 ok = p.0 == Piece::King || ok;
-                val -= piece_value(p.0);
+                b += piece_value(p.0);
             }
         }
 
@@ -183,7 +202,7 @@ impl Board {
         } else if !ok {
             Inf
         } else {
-            Num(val)
+            Num(a - b)
         }
     }
 }

@@ -15,7 +15,7 @@ pub struct Board([[(Piece, Color); 8]; 8]);
 
 impl Board {
     fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
-        let buffer: Vec<_> = pos
+        let mut buffer: Vec<_> = pos
             .valid_moves(piece, color)
             .iter()
             .filter(|mv| !mv.is_invalid())
@@ -49,7 +49,7 @@ impl Board {
             }
         }
 
-        buffer
+        buffer = buffer
             .iter()
             .filter(move |mv| {
                 if mv.x > 8 || mv.x < 0 || mv.y > 8 || mv.y < 0 {
@@ -58,7 +58,7 @@ impl Board {
                 let (dx, dy, len) = vector_comp(&pos, mv);
                 // !dead_arrows.iter().any(|a| a(mv.x) == mv.y)
                 !dead_vecs.iter().any(|(x, y, slen, scolor)| {
-                    if *scolor == color {
+                    if *scolor == color || piece == Piece::Pawn {
                         *x == dx && *y == dy && len >= *slen
                     } else {
                         *x == dx && *y == dy && len > *slen
@@ -66,7 +66,33 @@ impl Board {
                 })
             })
             .copied()
-            .collect()
+            .collect();
+
+        if piece == Piece::Pawn {
+            let mv_dir = if color == Black { 1 } else { -1 };
+            let mv_pos = [
+                Pos {
+                    x: pos.x + 1,
+                    y: pos.y + mv_dir,
+                },
+                Pos {
+                    x: pos.x - 1,
+                    y: pos.y + mv_dir,
+                },
+            ];
+
+            for mv in mv_pos {
+                if mv.is_invalid() {
+                    continue;
+                }
+                let p = self.0[mv.x as usize][mv.y as usize];
+                if p.0 != Piece::None && p.1 != color {
+                    buffer.push(mv)
+                }
+            }
+        }
+
+        buffer
     }
 
     // returns true and moves piece if move is valid. Else returns false and does not move piece.
@@ -147,6 +173,7 @@ pub fn main() {
     assert!(Num(0) > NegInf);
     assert!(Num(0) < Inf);
     assert!(NegInf < Inf);
+    assert!(Inf > NegInf);
     //let mut board = [' '; 8 * 8];
 
     let mut game = deepblue::GameState::default();
@@ -167,12 +194,16 @@ pub fn main() {
     //}
 
     let mut turn = Black;
-    while game.winner.is_none() {
-        turn.invert();
-        println!("\n\n");
+    let mut board_value = Num(0);
+    let mut round = 0;
 
-        let mv = game.simulate_til_win(turn, None, 0, 5);
-        game.board.move_piece(mv.mv);
+    while game.winner.is_none() && board_value != Inf && board_value != NegInf {
+        turn.invert();
+        board_value = game.board.naive_value(turn);
+        println!("\n\n Round {} - {:?}", round, board_value);
+
+        let action = game.best_move(turn, 4);
+        game.board.move_piece(action);
 
         println!("A  B  C  D  E  F  G  H\n");
         for y in 0..8 {
@@ -183,7 +214,7 @@ pub fn main() {
                     match game.board.0[x][y].0 {
                         Queen => 'Q',
                         Knight => 'k',
-                        King => '*',
+                        King => '"',
                         Bishop => 'b',
                         Rook => 'r',
                         Pawn => 'p',
@@ -200,6 +231,7 @@ pub fn main() {
             }
             println!(" {}", y);
         }
+        round += 1;
     }
 }
 
