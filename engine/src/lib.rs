@@ -69,7 +69,7 @@ impl Board {
             .collect();
 
         if piece == Piece::Pawn {
-            let mv_dir = if color == Black { 1 } else { -1 };
+            let mv_dir = if color == Black { -1 } else { 1 };
             let mv_pos = [
                 Pos {
                     x: pos.x + 1,
@@ -200,9 +200,14 @@ pub fn main() {
     while game.winner.is_none() && board_value != Inf && board_value != NegInf {
         turn.invert();
         board_value = game.board.naive_value(turn);
-        println!("\n\n Round {} - {:?}", round, board_value);
+        println!(
+            "\n\n Round {} - {turn:?} has {:?} points - {turn:?}'s turn",
+            round,
+            board_value,
+            turn = turn
+        );
 
-        let action = game.best_move(turn, 8);
+        let action = game.best_move(turn, 6);
         game.board.move_piece(action);
 
         println!("A  B  C  D  E  F  G  H\n");

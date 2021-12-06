@@ -12,26 +12,6 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn force_recheck_winner(&mut self) {
-        if !self
-            .board
-            .0
-            .iter()
-            .flatten()
-            .any(|n| n.0 == Piece::King && n.1 == White)
-        {
-            self.winner = Some(Black);
-        } else if !self
-            .board
-            .0
-            .iter()
-            .flatten()
-            .any(|n| n.0 == Piece::King && n.1 == Black)
-        {
-            self.winner = Some(White);
-        }
-    }
-
     pub fn get_valid_moves(&self, color: Color) -> impl ParallelIterator<Item = Move> + '_ {
         (0..8 * 8)
             .into_par_iter()
@@ -64,7 +44,7 @@ impl GameState {
         maxormin(
             self.get_valid_moves(color).map(|action| {
                 let mut sim = *self;
-                sim.board.move_piece(action);
+                sim.move_piece(action);
 
                 let alpha = alpha.clone();
                 let value = sim.minimax(color.not(), depth, Num(alpha.load(SeqCst)), Inf);
@@ -82,6 +62,9 @@ impl GameState {
         let alpha = Arc::new(AtomicI32::new(alpha.i32()));
         let beta = Arc::new(AtomicI32::new(beta.i32()));
 
+        if let Some(winner) = self.winner {
+            return if winner == White { Inf } else { NegInf };
+        }
         if depth == 0 {
             return self.board.naive_value(White);
         }
@@ -91,7 +74,7 @@ impl GameState {
                 .filter(|_| beta.load(SeqCst) > alpha.load(SeqCst))
                 .map(|action| {
                     let mut sim = *self;
-                    sim.board.move_piece(action);
+                    sim.move_piece(action);
                     let value = sim.minimax(
                         color.not(),
                         depth - 1,
@@ -108,6 +91,20 @@ impl GameState {
             color == White,
         )
         .unwrap_or(self.board.naive_value(White))
+    }
+
+    pub fn move_piece(&mut self, action: Move) -> bool {
+        if action.0.is_invalid() || action.1.is_invalid() {
+            return false;
+        }
+        let won = self.board.0[action.1.x as usize][action.1.y as usize].0 == Piece::King;
+        let losser = self.board.0[action.1.x as usize][action.1.y as usize].1;
+        let moved = self.board.move_piece(action);
+
+        if moved && won {
+            self.winner = Some(losser.not())
+        }
+        moved
     }
 }
 
