@@ -1,8 +1,11 @@
-pub use rayon::prelude::*;
+use std::io::{stdout, Write};
+
+use anyhow::*;
+//pub use rayon::prelude::*;
 use wasm_bindgen::prelude::*;
 
-#[cfg(target_family = "wasm")]
-pub use wasm_bindgen_rayon::init_thread_pool;
+//#[cfg(target_family = "wasm")]
+//pub use wasm_bindgen_rayon::init_thread_pool;
 
 mod deepblue;
 mod pieces;
@@ -145,7 +148,7 @@ macro_rules! gen_row {
 impl std::default::Default for Board {
     fn default() -> Self {
         let tmp = [
-            gen_row![White, r k b q * b k r],
+            gen_row![White, r k b * q b k r],
             [(Piece::Pawn, White); 8],
             [(Piece::None, White); 8],
             [(Piece::None, White); 8],
@@ -168,7 +171,7 @@ impl std::default::Default for Board {
 }
 
 // Main function for debugging
-pub fn main() {
+pub fn main() -> Result<()> {
     use Value::*;
     assert!(Num(0) > NegInf);
     assert!(Num(0) < Inf);
@@ -197,6 +200,10 @@ pub fn main() {
     let mut board_value = Num(0);
     let mut round = 0;
 
+    use std::io::BufRead;
+    let mut stdin = std::io::stdin();
+    let mut usr_in = stdin.lock().lines();
+
     while game.winner.is_none() && board_value != Inf && board_value != NegInf {
         turn.invert();
         board_value = game.board.naive_value(turn);
@@ -207,8 +214,30 @@ pub fn main() {
             turn = turn
         );
 
-        let action = game.best_move(turn, 6);
-        game.board.move_piece(action);
+        if turn == White {
+            let action = game.best_move(turn, 5);
+            game.move_piece(action);
+        } else {
+            loop {
+                print!("==> ");
+                stdout().flush()?;
+                let action_str = usr_in.next().unwrap()?.to_uppercase();
+                let mut action_str = action_str.chars();
+                //n - 41
+                let a = Pos {
+                    x: action_str.next().unwrap() as i8 - 65,
+                    y: format!("{}", action_str.next().unwrap()).parse()?,
+                };
+                let b = Pos {
+                    x: action_str.next().unwrap() as i8 - 65,
+                    y: format!("{}", action_str.next().unwrap()).parse()?,
+                };
+
+                if game.move_piece((a, b)) {
+                    break;
+                }
+            }
+        }
 
         println!("A  B  C  D  E  F  G  H\n");
         for y in 0..8 {
@@ -238,6 +267,7 @@ pub fn main() {
         }
         round += 1;
     }
+    Ok(())
 }
 
 pub fn hello_world() {

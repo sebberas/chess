@@ -7,6 +7,7 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+anyhow = "1.0.51"
 js-sys = "0.3.55"
 rayon = "1.5"
 wasm-bindgen = "0.2"

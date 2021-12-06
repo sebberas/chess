@@ -12,9 +12,9 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn get_valid_moves(&self, color: Color) -> impl ParallelIterator<Item = Move> + '_ {
+    pub fn get_valid_moves(&self, color: Color) -> impl Iterator<Item = Move> + '_ {
         (0..8 * 8)
-            .into_par_iter()
+            .into_iter()
             .filter_map(move |n| {
                 let x = n % 8;
                 let y = (n - x) / 8;
@@ -108,7 +108,7 @@ impl GameState {
     }
 }
 
-fn maxormin<T: Ord>(i: impl ParallelIterator<Item = T>, is_max: bool) -> Option<T> {
+fn maxormin<T: Ord>(i: impl Iterator<Item = T>, is_max: bool) -> Option<T> {
     if is_max {
         i.max()
     } else {
@@ -172,7 +172,7 @@ pub fn piece_value(p: Piece) -> i32 {
         Bishop => 3,
         Rook => 5,
         Queen => 9,
-        King => 100,
+        King => 1000,
         None => 0,
     }
 }
