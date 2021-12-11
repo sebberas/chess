@@ -1,10 +1,8 @@
-use std::sync::{
-    atomic::{AtomicI32, Ordering::*},
-    Arc,
-};
+use std::{cell::RefCell, ops::Not};
 
 use crate::*;
 
+#[wasm_bindgen]
 #[derive(Clone, Copy, Default)]
 pub struct GameState {
     pub board: Board,
@@ -39,16 +37,20 @@ impl GameState {
     }
 
     pub fn best_move(&mut self, color: Color, depth: usize) -> Move {
-        let alpha = Arc::new(AtomicI32::new(-i32::MAX));
+        let mut alpha = NegInf;
+        let mut beta = Inf;
 
         maxormin(
             self.get_valid_moves(color).map(|action| {
                 let mut sim = *self;
                 sim.move_piece(action);
 
-                let alpha = alpha.clone();
-                let value = sim.minimax(color.not(), depth, Num(alpha.load(SeqCst)), Inf);
-                alpha.fetch_max(value.i32(), SeqCst);
+                let value = sim.minimax(color.not(), depth, alpha, beta);
+                if color == White {
+                    alpha = alpha.max(value);
+                } else {
+                    beta = beta.min(value);
+                }
 
                 ValuedMove { value, action }
             }),
@@ -58,10 +60,13 @@ impl GameState {
         .action
     }
 
-    pub fn minimax(&mut self, color: Color, depth: usize, alpha: Value, beta: Value) -> Value {
-        let alpha = Arc::new(AtomicI32::new(alpha.i32()));
-        let beta = Arc::new(AtomicI32::new(beta.i32()));
-
+    pub fn minimax(
+        &mut self,
+        color: Color,
+        depth: usize,
+        mut alpha: Value,
+        mut beta: Value,
+    ) -> Value {
         if let Some(winner) = self.winner {
             return if winner == White { Inf } else { NegInf };
         }
@@ -69,22 +74,23 @@ impl GameState {
             return self.board.naive_value(White);
         }
 
+        let is_done = RefCell::new(false);
+
         maxormin(
             self.get_valid_moves(color)
-                .filter(|_| beta.load(SeqCst) > alpha.load(SeqCst))
+                .filter(|_| is_done.borrow().not())
                 .map(|action| {
                     let mut sim = *self;
                     sim.move_piece(action);
-                    let value = sim.minimax(
-                        color.not(),
-                        depth - 1,
-                        Num(alpha.load(SeqCst)),
-                        Num(beta.load(SeqCst)),
-                    );
+                    let value = sim.minimax(color.not(), depth - 1, alpha, beta);
                     if color == White {
-                        alpha.fetch_max(value.i32(), SeqCst);
+                        alpha = alpha.max(value);
                     } else {
-                        beta.fetch_min(value.i32(), SeqCst);
+                        beta = beta.min(value);
+                    }
+                    if alpha > beta {
+                        let mut is_done = is_done.borrow_mut();
+                        *is_done = true;
                     }
                     value
                 }),
@@ -97,8 +103,8 @@ impl GameState {
         if action.0.is_invalid() || action.1.is_invalid() {
             return false;
         }
-        let won = self.board.0[action.1.x as usize][action.1.y as usize].0 == Piece::King;
-        let losser = self.board.0[action.1.x as usize][action.1.y as usize].1;
+        let won = self.board[action.1].0 == Piece::King;
+        let losser = self.board[action.1].1;
         let moved = self.board.move_piece(action);
 
         if moved && won {
@@ -143,27 +149,6 @@ pub enum Value {
 
 use Value::*;
 
-impl Value {
-    pub fn minus(&self, other: &Self) -> Self {
-        match self {
-            Inf => Inf,
-            NegInf => NegInf,
-            Num(l) => match other {
-                Inf => NegInf,
-                NegInf => Inf,
-                Num(r) => Num(l - r),
-            },
-        }
-    }
-    pub fn i32(&self) -> i32 {
-        match self {
-            Inf => i32::MAX,
-            NegInf => -i32::MAX,
-            Num(n) => *n,
-        }
-    }
-}
-
 pub fn piece_value(p: Piece) -> i32 {
     use Piece::*;
     match p {
@@ -172,7 +157,7 @@ pub fn piece_value(p: Piece) -> i32 {
         Bishop => 3,
         Rook => 5,
         Queen => 9,
-        King => 1000,
+        King => 100,
         None => 0,
     }
 }
@@ -201,5 +186,31 @@ impl Board {
         } else {
             Num(a - b)
         }
+    }
+}
+
+#[wasm_bindgen]
+pub fn get_best_move(board: Board, color: Color, depth: usize) -> Box<[i8]> {
+    let mut game = GameState {
+        board,
+        winner: None,
+    };
+    let bm = game.best_move(color, depth);
+    Box::new([bm.0.x, bm.0.y, bm.1.x, bm.1.y])
+}
+
+#[cfg(not(target_family = "wasm"))]
+mod bench {
+    extern crate test;
+    use crate::GameState;
+    use test::Bencher;
+
+    #[bench]
+    fn initial_best_move(b: &mut Bencher) {
+        b.iter(|| {
+            let mut game = GameState::default();
+            let action = game.best_move(crate::White, crate::DEFAULT_DEPTH);
+            test::black_box(game.move_piece(action));
+        })
     }
 }

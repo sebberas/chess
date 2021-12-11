@@ -1,3 +1,5 @@
+#![feature(test)]
+
 use std::io::{stdout, Write};
 
 use anyhow::*;
@@ -9,12 +11,41 @@ use wasm_bindgen::prelude::*;
 
 mod deepblue;
 mod pieces;
+pub use deepblue::*;
 pub use pieces::*;
 
 use crate::deepblue::Value;
 
+#[wasm_bindgen]
 #[derive(Clone, Copy)]
 pub struct Board([[(Piece, Color); 8]; 8]);
+
+impl std::ops::Index<Pos> for Board {
+    type Output = (Piece, Color);
+    fn index(&self, p: Pos) -> &Self::Output {
+        if p.is_invalid() {
+            panic!("Invalid pos: {:?}", p)
+        }
+        unsafe {
+            self.0
+                .get_unchecked(p.x as usize)
+                .get_unchecked(p.y as usize)
+        }
+    }
+}
+
+impl std::ops::IndexMut<Pos> for Board {
+    fn index_mut(&mut self, p: Pos) -> &mut Self::Output {
+        if p.is_invalid() {
+            panic!("Invalid pos: {:?}", p)
+        }
+        unsafe {
+            self.0
+                .get_unchecked_mut(p.x as usize)
+                .get_unchecked_mut(p.y as usize)
+        }
+    }
+}
 
 impl Board {
     fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
@@ -28,7 +59,7 @@ impl Board {
         if piece == Piece::Knight {
             return buffer
                 .iter()
-                .filter(|mv| self.0[mv.x as usize][mv.y as usize].1 != color)
+                .filter(|&&mv| self[mv].1 != color || self[mv].0 == Piece::None)
                 .copied()
                 .collect();
         }
@@ -45,10 +76,10 @@ impl Board {
             (dx.round(), dy.round(), len)
         };
 
-        for mv in &buffer {
-            let (dx, dy, len) = vector_comp(&pos, mv);
-            if self.0[mv.x as usize][mv.y as usize].0 != Piece::None {
-                dead_vecs.push((dx, dy, len, self.0[mv.x as usize][mv.y as usize].1));
+        for &mv in &buffer {
+            let (dx, dy, len) = vector_comp(&pos, &mv);
+            if self[mv].0 != Piece::None {
+                dead_vecs.push((dx, dy, len, self[mv].1));
             }
         }
 
@@ -88,7 +119,7 @@ impl Board {
                 if mv.is_invalid() {
                     continue;
                 }
-                let p = self.0[mv.x as usize][mv.y as usize];
+                let p = self[mv];
                 if p.0 != Piece::None && p.1 != color {
                     buffer.push(mv)
                 }
@@ -103,18 +134,51 @@ impl Board {
         if mv.0.is_invalid() || mv.1.is_invalid() {
             return false;
         }
-        let p = self.0[mv.0.x as usize][mv.0.y as usize];
+        let p = self[mv.0];
         let can_move = self.can_move(p.0, mv.0, p.1);
 
         can_move.iter().any(|can_mv| {
             if *can_mv == mv.1 {
-                self.0[mv.0.x as usize][mv.0.y as usize].0 = Piece::None;
-                self.0[mv.1.x as usize][mv.1.y as usize] = p;
+                self[mv.0].0 = Piece::None;
+                self[mv.1] = p;
                 true
             } else {
                 false
             }
         })
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    fn print(&self) {
+        use crossterm::style::Stylize;
+
+        println!("A B C D E F G H\n");
+
+        for y in 0..8 {
+            for x in 0..8 {
+                use Piece::*;
+
+                let mut c = (match self.0[x][y].0 {
+                    Queen => "Q",
+                    Knight => "K",
+                    King => "#",
+                    Bishop => "B",
+                    Rook => "R",
+                    Pawn => "P",
+                    None => ".",
+                }
+                .to_string()
+                    + " ")
+                    .bold();
+
+                if self.0[x][y].1 == White && self.0[x][y].0 != None {
+                    c = c.negative();
+                }
+
+                print!("{}", c);
+            }
+            println!(" {}", y + 1);
+        }
     }
 }
 
@@ -170,7 +234,34 @@ impl std::default::Default for Board {
     }
 }
 
+#[wasm_bindgen]
+pub fn default_board() -> GameState {
+    GameState::default()
+}
+
+#[wasm_bindgen]
+pub fn board_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
+    //let pos = Pos::from_u16(pos);
+    board.move_piece((a, b))
+}
+
+#[wasm_bindgen]
+pub fn board_is_valid_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
+    if a.is_invalid() || b.is_invalid() {
+        return false;
+    }
+    let p = board.board[a];
+    board
+        .board
+        .can_move(p.0, a, p.1)
+        .iter()
+        .any(|action| *action == b)
+}
+
+pub const DEFAULT_DEPTH: usize = 4;
+
 // Main function for debugging
+#[cfg(not(target_family = "wasm"))]
 pub fn main() -> Result<()> {
     use Value::*;
     assert!(Num(0) > NegInf);
@@ -201,7 +292,7 @@ pub fn main() -> Result<()> {
     let mut round = 0;
 
     use std::io::BufRead;
-    let mut stdin = std::io::stdin();
+    let stdin = std::io::stdin();
     let mut usr_in = stdin.lock().lines();
 
     while game.winner.is_none() && board_value != Inf && board_value != NegInf {
@@ -215,22 +306,22 @@ pub fn main() -> Result<()> {
         );
 
         if turn == White {
-            let action = game.best_move(turn, 5);
+            let action = game.best_move(turn, DEFAULT_DEPTH);
             game.move_piece(action);
         } else {
             loop {
-                print!("==> ");
+                print!("your turn --> ");
                 stdout().flush()?;
                 let action_str = usr_in.next().unwrap()?.to_uppercase();
                 let mut action_str = action_str.chars();
                 //n - 41
                 let a = Pos {
                     x: action_str.next().unwrap() as i8 - 65,
-                    y: format!("{}", action_str.next().unwrap()).parse()?,
+                    y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
                 };
                 let b = Pos {
                     x: action_str.next().unwrap() as i8 - 65,
-                    y: format!("{}", action_str.next().unwrap()).parse()?,
+                    y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
                 };
 
                 if game.move_piece((a, b)) {
@@ -239,32 +330,7 @@ pub fn main() -> Result<()> {
             }
         }
 
-        println!("A  B  C  D  E  F  G  H\n");
-        for y in 0..8 {
-            for x in 0..8 {
-                use Piece::*;
-                print!(
-                    "{}{} ",
-                    match game.board.0[x][y].0 {
-                        Queen => 'Q',
-                        Knight => 'k',
-                        King => '"',
-                        Bishop => 'b',
-                        Rook => 'r',
-                        Pawn => 'p',
-                        None => '.',
-                    },
-                    if game.board.0[x][y].0 == None {
-                        ' '
-                    } else if game.board.0[x][y].1 == White {
-                        'w'
-                    } else {
-                        'b'
-                    }
-                );
-            }
-            println!(" {}", y);
-        }
+        game.board.print();
         round += 1;
     }
     Ok(())
