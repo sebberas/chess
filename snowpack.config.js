@@ -6,7 +6,7 @@ module.exports = {
   mount: {
     src: "/static",
     public: "/",
-    "lib/pkg": "/static/engine",
+    "engine/pkg": "/static/engine",
     /* ... */
   },
   plugins: [
