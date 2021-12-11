@@ -20,32 +20,38 @@ use crate::deepblue::Value;
 #[derive(Clone, Copy)]
 pub struct Board([[(Piece, Color); 8]; 8]);
 
-impl std::ops::Index<Pos> for Board {
-    type Output = (Piece, Color);
-    fn index(&self, p: Pos) -> &Self::Output {
-        if p.is_invalid() {
-            panic!("Invalid pos: {:?}", p)
-        }
-        unsafe {
-            self.0
-                .get_unchecked(p.x as usize)
-                .get_unchecked(p.y as usize)
-        }
+impl Board {
+    pub unsafe fn get_unchecked(&self, p: Pos) -> &(Piece, Color) {
+        self.0
+            .get_unchecked(p.x as usize)
+            .get_unchecked(p.y as usize)
+    }
+
+    pub unsafe fn get_unchecked_mut(&mut self, p: Pos) -> &mut (Piece, Color) {
+        self.0
+            .get_unchecked_mut(p.x as usize)
+            .get_unchecked_mut(p.y as usize)
     }
 }
 
-impl std::ops::IndexMut<Pos> for Board {
-    fn index_mut(&mut self, p: Pos) -> &mut Self::Output {
-        if p.is_invalid() {
-            panic!("Invalid pos: {:?}", p)
-        }
-        unsafe {
-            self.0
-                .get_unchecked_mut(p.x as usize)
-                .get_unchecked_mut(p.y as usize)
-        }
-    }
-}
+//impl std::ops::Index<Pos> for Board {
+//    type Output = (Piece, Color);
+//    fn index(&self, p: Pos) -> &Self::Output {
+//        if p.is_invalid() {
+//            panic!("Invalid pos: {:?}", p)
+//        }
+//        unsafe { self.get_unchecked(p) }
+//    }
+//}
+//
+//impl std::ops::IndexMut<Pos> for Board {
+//    fn index_mut(&mut self, p: Pos) -> &mut Self::Output {
+//        if p.is_invalid() {
+//            panic!("Invalid pos: {:?}", p)
+//        }
+//        unsafe { self.get_unchecked_mut(p) }
+//    }
+//}
 
 impl Board {
     fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
@@ -59,7 +65,9 @@ impl Board {
         if piece == Piece::Knight {
             return buffer
                 .iter()
-                .filter(|&&mv| self[mv].1 != color || self[mv].0 == Piece::None)
+                .filter(|&&mv| unsafe {
+                    self.get_unchecked(mv).1 != color || self.get_unchecked(mv).0 == Piece::None
+                })
                 .copied()
                 .collect();
         }
@@ -78,8 +86,10 @@ impl Board {
 
         for &mv in &buffer {
             let (dx, dy, len) = vector_comp(&pos, &mv);
-            if self[mv].0 != Piece::None {
-                dead_vecs.push((dx, dy, len, self[mv].1));
+            unsafe {
+                if self.get_unchecked(mv).0 != Piece::None {
+                    dead_vecs.push((dx, dy, len, self.get_unchecked(mv).1));
+                }
             }
         }
 
@@ -119,7 +129,7 @@ impl Board {
                 if mv.is_invalid() {
                     continue;
                 }
-                let p = self[mv];
+                let p = unsafe { self.get_unchecked(mv) };
                 if p.0 != Piece::None && p.1 != color {
                     buffer.push(mv)
                 }
@@ -134,13 +144,15 @@ impl Board {
         if mv.0.is_invalid() || mv.1.is_invalid() {
             return false;
         }
-        let p = self[mv.0];
+        let p = unsafe { *self.get_unchecked(mv.0) };
         let can_move = self.can_move(p.0, mv.0, p.1);
 
         can_move.iter().any(|can_mv| {
             if *can_mv == mv.1 {
-                self[mv.0].0 = Piece::None;
-                self[mv.1] = p;
+                unsafe {
+                    self.get_unchecked_mut(mv.0).0 = Piece::None;
+                    *(self.get_unchecked_mut(mv.1)) = p;
+                }
                 true
             } else {
                 false
@@ -250,7 +262,7 @@ pub fn board_is_valid_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
     if a.is_invalid() || b.is_invalid() {
         return false;
     }
-    let p = board.board[a];
+    let p = unsafe { board.board.get_unchecked(a) };
     board
         .board
         .can_move(p.0, a, p.1)

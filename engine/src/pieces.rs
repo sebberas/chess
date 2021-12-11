@@ -56,34 +56,20 @@ pub struct JsPos {
 pub type Move = (Pos, Pos);
 
 impl Pos {
-    // Bit magit, to encode a 2D vector into a u16, for easy interfacing with javascript
-    pub fn to_u16(&self) -> u16 {
-        let x = self.x;
-        let y = self.y;
-        if self.is_invalid() {
-            // If position is invalid, return 9 (This position does not corespond to any position on the board)
-            // The point here is to make some errors easier to spot in javascript. 9 means error
-            return u16::MAX;
-        }
-        let mut buffer = [0; 2];
-        buffer[0] = x as u8;
-        buffer[1] = y as u8;
-        u16::from_ne_bytes(buffer)
-        //self.x as u16 + self.y as u16 * 8
-    }
-    pub fn from_u16(pos: u16) -> Self {
-        //let x = pos as i8 % 8;
-        //let y = (pos as i8 - x) / 8;
-        let pos = pos.to_ne_bytes();
-        Self {
-            x: pos[0] as i8,
-            y: pos[1] as i8,
-        }
-    }
     pub fn is_invalid(&self) -> bool {
         self.x < 0 || self.y < 0 || self.x >= 8 || self.y >= 8
     }
 
+    pub fn from_parts(pos: [i8; 2]) -> Self {
+        let tmp = Self {
+            x: pos[0],
+            y: pos[1],
+        };
+        if tmp.is_invalid() {
+            panic!("Invalid pos: {:?}", tmp)
+        }
+        tmp
+    }
     pub fn parts(&self) -> [i8; 2] {
         [self.x, self.y]
     }
@@ -94,18 +80,7 @@ impl Pos {
 pub fn valid_moves(piece: Piece, pos: Pos, color: Color) -> Vec<i8> {
     pos.valid_moves(piece, color)
         .iter()
-        .filter(|n| {
-            if n.to_u16() == u16::MAX {
-                #[cfg(target_family = "wasm")]
-                unsafe {
-                    use crate::log;
-                    log("crab_engine Error: Pos to u16 conversion error");
-                }
-                #[cfg(not(target_family = "wasm"))]
-                println!("Error: Pos to u16 conversion error")
-            }
-            n.to_u16() != u16::MAX
-        })
+        .filter(|p| p.is_invalid())
         .map(|p| p.parts())
         .flatten()
         .collect()
@@ -314,35 +289,4 @@ impl Pos {
             Piece::None => Box::new([]),
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{Board, Color::*, Piece::*, Pos};
-
-    //#[test]
-    //fn pawn_attack() {
-    //    let mut b = Board::default();
-    //    b.0[1][2] = (Pawn, Black);
-    //    b.0[0][2] = (Pawn, Black);
-    //    let moves = b.can_move(Pawn, Pos { x: 0, y: 1 }, White);
-
-    //    assert!(
-    //        moves.iter().any(|p| *p == Pos { x: 1, y: 2 }),
-    //        "{:?}",
-    //        moves
-    //    );
-
-    //    assert!(
-    //        !moves.iter().any(|p| *p == Pos { x: 0, y: 2 }),
-    //        "{:?}",
-    //        moves
-    //    );
-
-    //    assert!(
-    //        !moves.iter().any(|p| *p == Pos { x: 0, y: 3 }),
-    //        "{:?}",
-    //        moves
-    //    );
-    //}
 }

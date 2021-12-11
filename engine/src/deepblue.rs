@@ -16,14 +16,18 @@ impl GameState {
             .filter_map(move |n| {
                 let x = n % 8;
                 let y = (n - x) / 8;
-                if self.board.0[x][y].1 != color {
-                    return None;
-                }
-
                 let pos = Pos {
                     x: x as i8,
                     y: y as i8,
                 };
+
+                unsafe {
+                    let p = self.board.get_unchecked(pos); // p is always valid, because it has a known range of x: 0..8 and y: 0.8
+                    if p.1 != color || p.0 == Piece::None {
+                        return None;
+                    }
+                }
+
                 let piece = self.board.0[x][y].0;
                 Some(
                     self.board
@@ -103,8 +107,8 @@ impl GameState {
         if action.0.is_invalid() || action.1.is_invalid() {
             return false;
         }
-        let won = self.board[action.1].0 == Piece::King;
-        let losser = self.board[action.1].1;
+        let won = unsafe { self.board.get_unchecked(action.1).0 == Piece::King };
+        let losser = unsafe { self.board.get_unchecked(action.1).1 };
         let moved = self.board.move_piece(action);
 
         if moved && won {
@@ -209,7 +213,16 @@ mod bench {
     fn initial_best_move(b: &mut Bencher) {
         b.iter(|| {
             let mut game = GameState::default();
-            let action = game.best_move(crate::White, crate::DEFAULT_DEPTH);
+            let action = game.best_move(crate::White, 2);
+            test::black_box(game.move_piece(action));
+        })
+    }
+
+    #[bench]
+    fn move_piece(b: &mut Bencher) {
+        let mut game = GameState::default();
+        let action = game.best_move(crate::White, 2);
+        b.iter(|| {
             test::black_box(game.move_piece(action));
         })
     }
