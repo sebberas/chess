@@ -202,28 +202,3 @@ pub fn get_best_move(board: Board, color: Color, depth: usize) -> Box<[i8]> {
     let bm = game.best_move(color, depth);
     Box::new([bm.0.x, bm.0.y, bm.1.x, bm.1.y])
 }
-
-#[cfg(not(target_family = "wasm"))]
-mod bench {
-    extern crate test;
-    use crate::GameState;
-    use test::Bencher;
-
-    #[bench]
-    fn initial_best_move(b: &mut Bencher) {
-        b.iter(|| {
-            let mut game = GameState::default();
-            let action = game.best_move(crate::White, 2);
-            test::black_box(game.move_piece(action));
-        })
-    }
-
-    #[bench]
-    fn move_piece(b: &mut Bencher) {
-        let mut game = GameState::default();
-        let action = game.best_move(crate::White, 2);
-        b.iter(|| {
-            test::black_box(game.move_piece(action));
-        })
-    }
-}

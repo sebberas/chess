@@ -1,9 +1,13 @@
 #![feature(test)]
 
+// # TODO inden aflevering
+// - [ ] https://github.com/w3reality/wasm-mt
+// - [ ] Move get_unchecked into index impl
+// - [ ] Move wasm api stuff into seperate module
+
 use std::io::{stdout, Write};
 
 use anyhow::*;
-//pub use rayon::prelude::*;
 use wasm_bindgen::prelude::*;
 
 //#[cfg(target_family = "wasm")]
@@ -13,6 +17,7 @@ mod deepblue;
 mod pieces;
 pub use deepblue::*;
 pub use pieces::*;
+pub mod bench;
 
 use crate::deepblue::Value;
 
@@ -53,8 +58,11 @@ impl Board {
 //    }
 //}
 
+mod sqrts;
 impl Board {
     fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
+        use sqrts::*;
+
         let mut buffer: Vec<_> = pos
             .valid_moves(piece, color)
             .iter()
@@ -72,16 +80,20 @@ impl Board {
                 .collect();
         }
 
-        let mut dead_vecs: Vec<(f32, f32, f32, Color)> = vec![];
+        let mut dead_vecs: Vec<(i8, i8, i8, Color)> = vec![];
 
-        let vector_comp = |pos: &Pos, mv: &Pos| -> (f32, f32, f32) {
-            let mut dx = (pos.x - mv.x) as f32;
-            let mut dy = (pos.y - mv.y) as f32;
+        let vector_comp = |pos: &Pos, mv: &Pos| -> (i8, i8, i8) {
+            let dx = pos.x - mv.x;
+            let dy = pos.y - mv.y;
 
-            let len = ((dx.powi(2) + dy.powi(2)) as f32).sqrt();
-            dx = if len == 0. { 0. } else { dx / len };
-            dy = if len == 0. { 0. } else { dy / len };
-            (dx.round(), dy.round(), len)
+            let mut comps = unsafe {
+                *COMPS
+                    .get_unchecked(dx.unsigned_abs() as usize)
+                    .get_unchecked(dy.unsigned_abs() as usize)
+            };
+            comps.0 *= dx.signum();
+            comps.1 *= dy.signum();
+            comps
         };
 
         for &mv in &buffer {
@@ -100,7 +112,6 @@ impl Board {
                     return false;
                 }
                 let (dx, dy, len) = vector_comp(&pos, mv);
-                // !dead_arrows.iter().any(|a| a(mv.x) == mv.y)
                 !dead_vecs.iter().any(|(x, y, slen, scolor)| {
                     if *scolor == color || piece == Piece::Pawn {
                         *x == dx && *y == dy && len >= *slen
@@ -139,6 +150,90 @@ impl Board {
         buffer
     }
 
+    //fn can_move_slow(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
+    //    let mut buffer: Vec<_> = pos
+    //        .valid_moves(piece, color)
+    //        .iter()
+    //        .filter(|mv| !mv.is_invalid())
+    //        .copied()
+    //        .collect();
+
+    //    if piece == Piece::Knight {
+    //        return buffer
+    //            .iter()
+    //            .filter(|&&mv| unsafe {
+    //                self.get_unchecked(mv).1 != color || self.get_unchecked(mv).0 == Piece::None
+    //            })
+    //            .copied()
+    //            .collect();
+    //    }
+
+    //    let mut dead_vecs: Vec<(f32, f32, f32, Color)> = vec![];
+
+    //    let vector_comp = |pos: &Pos, mv: &Pos| -> (f32, f32, f32) {
+    //        let mut dx = (pos.x - mv.x) as f32;
+    //        let mut dy = (pos.y - mv.y) as f32;
+
+    //        let len = ((dx.powi(2) + dy.powi(2)) as f32).sqrt();
+    //        dx = if len == 0. { 0. } else { dx / len };
+    //        dy = if len == 0. { 0. } else { dy / len };
+    //        (dx.round(), dy.round(), len)
+    //    };
+
+    //    for &mv in &buffer {
+    //        let (dx, dy, len) = vector_comp(&pos, &mv);
+    //        unsafe {
+    //            if self.get_unchecked(mv).0 != Piece::None {
+    //                dead_vecs.push((dx, dy, len, self.get_unchecked(mv).1));
+    //            }
+    //        }
+    //    }
+
+    //    buffer = buffer
+    //        .iter()
+    //        .filter(move |mv| {
+    //            if mv.x > 8 || mv.x < 0 || mv.y > 8 || mv.y < 0 {
+    //                return false;
+    //            }
+    //            let (dx, dy, len) = vector_comp(&pos, mv);
+    //            !dead_vecs.iter().any(|(x, y, slen, scolor)| {
+    //                if *scolor == color || piece == Piece::Pawn {
+    //                    *x == dx && *y == dy && len >= *slen
+    //                } else {
+    //                    *x == dx && *y == dy && len > *slen
+    //                }
+    //            })
+    //        })
+    //        .copied()
+    //        .collect();
+
+    //    if piece == Piece::Pawn {
+    //        let mv_dir = if color == Black { -1 } else { 1 };
+    //        let mv_pos = [
+    //            Pos {
+    //                x: pos.x + 1,
+    //                y: pos.y + mv_dir,
+    //            },
+    //            Pos {
+    //                x: pos.x - 1,
+    //                y: pos.y + mv_dir,
+    //            },
+    //        ];
+
+    //        for mv in mv_pos {
+    //            if mv.is_invalid() {
+    //                continue;
+    //            }
+    //            let p = unsafe { self.get_unchecked(mv) };
+    //            if p.0 != Piece::None && p.1 != color {
+    //                buffer.push(mv)
+    //            }
+    //        }
+    //    }
+
+    //    buffer
+    //}
+
     // returns true and moves piece if move is valid. Else returns false and does not move piece.
     pub fn move_piece(&mut self, mv: Move) -> bool {
         if mv.0.is_invalid() || mv.1.is_invalid() {
@@ -161,7 +256,9 @@ impl Board {
     }
 
     #[cfg(not(target_family = "wasm"))]
-    fn print(&self) {
+    fn print(&self, debug_points: Vec<Pos>) {
+        use std::slice::SliceIndex;
+
         use crossterm::style::Stylize;
 
         println!("A B C D E F G H\n");
@@ -169,8 +266,9 @@ impl Board {
         for y in 0..8 {
             for x in 0..8 {
                 use Piece::*;
+                let pos = Pos { x, y };
 
-                let mut c = (match self.0[x][y].0 {
+                let c = match unsafe { self.get_unchecked(pos).0 } {
                     Queen => "Q",
                     Knight => "K",
                     King => "#",
@@ -178,16 +276,25 @@ impl Board {
                     Rook => "R",
                     Pawn => "P",
                     None => ".",
-                }
-                .to_string()
-                    + " ")
-                    .bold();
+                };
 
-                if self.0[x][y].1 == White && self.0[x][y].0 != None {
-                    c = c.negative();
-                }
+                let s = format!(
+                    "{}{}",
+                    c,
+                    if debug_points.iter().any(|mv| *mv == pos) {
+                        "<".red().bold()
+                    } else {
+                        " ".bold()
+                    }
+                );
 
-                print!("{}", c);
+                if unsafe {
+                    self.get_unchecked(pos).1 == White && self.get_unchecked(pos).0 != None
+                } {
+                    print!("{}", s.negative());
+                } else {
+                    print!("{}", s);
+                }
             }
             println!(" {}", y + 1);
         }
@@ -270,8 +377,6 @@ pub fn board_is_valid_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
         .any(|action| *action == b)
 }
 
-pub const DEFAULT_DEPTH: usize = 4;
-
 // Main function for debugging
 #[cfg(not(target_family = "wasm"))]
 pub fn main() -> Result<()> {
@@ -310,39 +415,63 @@ pub fn main() -> Result<()> {
     while game.winner.is_none() && board_value != Inf && board_value != NegInf {
         turn.invert();
         board_value = game.board.naive_value(turn);
-        println!(
-            "\n\n Round {} - {turn:?} has {:?} points - {turn:?}'s turn",
-            round,
-            board_value,
-            turn = turn
-        );
+        //println!(
+        //    "\n\n Round {} - {turn:?} has {:?} points - {turn:?}'s turn",
+        //    round,
+        //    board_value,
+        //    turn = turn
+        //);
 
-        if turn == White {
-            let action = game.best_move(turn, DEFAULT_DEPTH);
-            game.move_piece(action);
-        } else {
-            loop {
-                print!("your turn --> ");
-                stdout().flush()?;
-                let action_str = usr_in.next().unwrap()?.to_uppercase();
-                let mut action_str = action_str.chars();
-                //n - 41
-                let a = Pos {
-                    x: action_str.next().unwrap() as i8 - 65,
-                    y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
-                };
-                let b = Pos {
-                    x: action_str.next().unwrap() as i8 - 65,
-                    y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
-                };
+        //if turn == White {
+        let action = game.best_move(turn, 3);
+        //unsafe {
+        //    let slow =
+        //        game.board
+        //            .can_move_slow(game.board.get_unchecked(action.0).0, action.0, turn);
+        //    let fast = game
+        //        .board
+        //        .can_move(game.board.get_unchecked(action.0).0, action.0, turn);
+        //    if fast != slow {
+        //        println!(
+        //            "{}\nFAST != SLOW, when moving {:?} {}{}",
+        //            "_".repeat(20),
+        //            game.board.get_unchecked(action.0),
+        //            "ABCDEFGH".as_bytes()[action.0.x as usize] as char,
+        //            action.0.y + 1
+        //        );
 
-                if game.move_piece((a, b)) {
-                    break;
-                }
-            }
-        }
+        //        println!("FAST:");
+        //        game.board.print(fast);
 
-        game.board.print();
+        //        println!("\nSLOW:");
+        //        game.board.print(slow);
+        //        println!("{}", "_".repeat(20));
+        //    }
+        //}
+        game.move_piece(action);
+        //} else {
+        //    loop {
+        //        print!("your turn --> ");
+        //        stdout().flush()?;
+        //        let action_str = usr_in.next().unwrap()?.to_uppercase();
+        //        let mut action_str = action_str.chars();
+        //        //n - 41
+        //        let a = Pos {
+        //            x: action_str.next().unwrap() as i8 - 65,
+        //            y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
+        //        };
+        //        let b = Pos {
+        //            x: action_str.next().unwrap() as i8 - 65,
+        //            y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
+        //        };
+
+        //        if game.move_piece((a, b)) {
+        //            break;
+        //        }
+        //    }
+        //}
+
+        //game.board.print(None);
         round += 1;
     }
     Ok(())
