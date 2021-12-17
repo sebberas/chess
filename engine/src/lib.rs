@@ -87,11 +87,13 @@ impl Board {
             let dy = pos.y - mv.y;
 
             let mut comps = unsafe {
+                // The magic of vector component lookup tables (which is something i just made up)
+                // lets us avoid wasting cpu time on calculating the square root of the same number over and over again.
                 *COMPS
                     .get_unchecked(dx.unsigned_abs() as usize)
                     .get_unchecked(dy.unsigned_abs() as usize)
             };
-            comps.0 *= dx.signum();
+            comps.0 *= dx.signum(); // Sign copying so we don't need a big symetrical lookup table.
             comps.1 *= dy.signum();
             comps
         };
@@ -375,6 +377,11 @@ pub fn board_is_valid_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
         .can_move(p.0, a, p.1)
         .iter()
         .any(|action| *action == b)
+}
+
+#[wasm_bindgen]
+pub fn new_pos(x: i8, y: i8) -> Pos {
+    Pos { x, y }
 }
 
 // Main function for debugging
