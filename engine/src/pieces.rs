@@ -75,12 +75,12 @@ impl Pos {
     }
 }
 
-// Returns a list of places a piece can move, when at s specific position
+/// Returns a list of places a piece can move, when at a specific position
 #[wasm_bindgen]
 pub fn valid_moves(piece: Piece, pos: Pos, color: Color) -> Vec<i8> {
     pos.valid_moves(piece, color)
         .iter()
-        .filter(|p| p.is_invalid())
+        .filter(|p| !p.is_invalid())
         .map(|p| p.parts())
         .flatten()
         .collect()
