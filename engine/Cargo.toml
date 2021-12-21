@@ -11,3 +11,6 @@ anyhow = "1.0.51"
 js-sys = "0.3.55"
 wasm-bindgen = "0.2"
 web-sys = "0.3.55"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+crossterm = "0.22.1"
