@@ -18,27 +18,23 @@ type Piece = {
 
 type BoardItemProps = {
   color: "white" | "black";
-  selected: boolean;
   piece: Piece | null;
-  x: number;
-  y: number;
+  pos: [number, number];
   onClick: StateUpdater<[number, number] | null>;
 };
 
 const BoardItem: FunctionalComponent<BoardItemProps> = ({
   color,
-  selected,
   piece,
-  x,
-  y,
+  pos,
   onClick,
 }) => {
   const className = `flex items-center justify-center ${
     color == "black" ? "bg-[#F0D9B5]" : "bg-[#B58863]"
-  } ${selected && "bg-red-400"}`;
+  }`;
 
   return (
-    <div className={className} onClick={() => onClick([x, y])}>
+    <div className={className} onClick={() => onClick(pos)}>
       {piece !== null ? (
         <piece.icon style={{ transform: "scale(1.25)" }} />
       ) : null}
@@ -75,7 +71,7 @@ const Board: FunctionalComponent = () => {
 
       if (piece !== null) {
         let pos = new_pos(clickedItem[0], clickedItem[1]);
-        let moves = valid_moves(piece.type, pos, piece.color);
+        let moves = valid_moves(PieceType.Pawn, pos, piece.color);
 
         if (moves.length > 0) {
           let view = new DataView(moves.buffer);
@@ -101,9 +97,7 @@ const Board: FunctionalComponent = () => {
             <BoardItem
               color={(x + y) % 2 === 0 ? "black" : "white"}
               piece={piece}
-              selected={possibleMoves.includes([x, y])}
-              x={x}
-              y={y}
+              pos={[x, y]}
               onClick={setClickedItem}
             />
           ));
