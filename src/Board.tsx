@@ -9,6 +9,7 @@ import {
   new_pos,
   valid_moves,
 } from "../engine/pkg/crab_engine";
+import { board_is_valid_move } from "../engine/pkg/crab_engine_bg.wasm";
 
 type Piece = {
   color: Color;
@@ -52,6 +53,14 @@ const initPieces = () => {
       color: Color.White,
       type: PieceType.Pawn,
       icon: PawnLightIcon,
+    };
+  }
+
+  for (let i = 0; i < 8; i++) {
+    pieces[6][i] = {
+      color: Color.Black,
+      type: PieceType.Pawn,
+      icon: PawnDarkIcon,
     };
   }
 
@@ -132,7 +141,6 @@ const Overlay: FunctionalComponent<OverlayProps> = (props) => {
     setClickedItem,
     possibleMoves,
     setPossibleMoves,
-    pieces,
     setPieces,
   } = props;
 
@@ -141,7 +149,6 @@ const Overlay: FunctionalComponent<OverlayProps> = (props) => {
       let piece = pieces[clickedItem[1]][clickedItem[0]];
       pieces[clickedItem[1]][clickedItem[0]] = null;
       pieces[move[1]][move[0]] = piece;
-      console.log(pieces);
       return pieces;
     });
 
