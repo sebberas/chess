@@ -10,11 +10,6 @@ import {
   valid_moves,
 } from "../engine/pkg/crab_engine";
 
-type Position = {
-  x: number;
-  y: number;
-};
-
 type Piece = {
   color: Color;
   type: PieceType;
@@ -74,12 +69,13 @@ const Board: FunctionalComponent = () => {
   const [possibleMoves, setPossibleMoves] = useState<[number, number][]>([]);
 
   useEffect(() => {
+    console.log(clickedItem);
     if (clickedItem !== null) {
       let piece = pieces[clickedItem[1]][clickedItem[0]];
 
       if (piece !== null) {
         let pos = new_pos(clickedItem[0], clickedItem[1]);
-        let moves = valid_moves(PieceType.King, pos, piece.color);
+        let moves = valid_moves(piece.type, pos, piece.color);
 
         if (moves.length > 0) {
           let view = new DataView(moves.buffer);
@@ -114,21 +110,51 @@ const Board: FunctionalComponent = () => {
         })}
       </div>
       {/* Overlay */}
-      {possibleMoves.length === 0 ? null : (
-        <div className="absolute grid grid-cols-[repeat(8,1fr)] grid-rows-[repeat(8,1fr)] w-[80vh] h-[80vh]">
-          {possibleMoves.map((move) => {
-            console.log(move);
-            return (
-              <div
-                className={`${rowStart[move[1]]} ${
-                  colStart[move[0]]
-                } bg-black opacity-25`}
-              ></div>
-            );
-          })}
-        </div>
-      )}
+      {possibleMoves.length > 0 && clickedItem ? (
+        <Overlay
+          clickedItem={clickedItem as [number, number]}
+          setClickedItem={setClickedItem}
+          possibleMoves={possibleMoves}
+        />
+      ) : null}
     </div>
+  );
+};
+
+type OverlayProps = {
+  clickedItem: [number, number];
+  setClickedItem: StateUpdater<[number, number] | null>;
+  possibleMoves: [number, number][];
+};
+
+const Overlay: FunctionalComponent<OverlayProps> = (props) => {
+  let { clickedItem, setClickedItem, possibleMoves } = props;
+  return (
+    <div className="absolute grid grid-cols-[repeat(8,1fr)] grid-rows-[repeat(8,1fr)] w-[80vh] h-[80vh]">
+      <OverlayItem pos={clickedItem} onClick={() => setClickedItem(null)} />
+      {possibleMoves.map((move) => (
+        <OverlayItem pos={move} active />
+      ))}
+    </div>
+  );
+};
+
+type OverlayItemProps = {
+  active?: boolean;
+  onClick?: () => unknown;
+  pos: [number, number];
+};
+
+const OverlayItem: FunctionalComponent<OverlayItemProps> = (props) => {
+  let { active, onClick, pos } = props;
+
+  return (
+    <div
+      onClick={() => (onClick !== undefined ? onClick() : {})}
+      className={`${rowStart[pos[1]]} ${colStart[pos[0]]} ${
+        active ? "bg-black opacity-30" : ""
+      }`}
+    ></div>
   );
 };
 
