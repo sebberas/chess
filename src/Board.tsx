@@ -65,13 +65,12 @@ const Board: FunctionalComponent = () => {
   const [possibleMoves, setPossibleMoves] = useState<[number, number][]>([]);
 
   useEffect(() => {
-    console.log(clickedItem);
     if (clickedItem !== null) {
       let piece = pieces[clickedItem[1]][clickedItem[0]];
 
       if (piece !== null) {
         let pos = new_pos(clickedItem[0], clickedItem[1]);
-        let moves = valid_moves(PieceType.Pawn, pos, piece.color);
+        let moves = valid_moves(piece.type, pos, piece.color);
 
         if (moves.length > 0) {
           let view = new DataView(moves.buffer);
@@ -109,6 +108,9 @@ const Board: FunctionalComponent = () => {
           clickedItem={clickedItem as [number, number]}
           setClickedItem={setClickedItem}
           possibleMoves={possibleMoves}
+          setPossibleMoves={setPossibleMoves}
+          pieces={pieces}
+          setPieces={setPieces}
         />
       ) : null}
     </div>
@@ -119,15 +121,39 @@ type OverlayProps = {
   clickedItem: [number, number];
   setClickedItem: StateUpdater<[number, number] | null>;
   possibleMoves: [number, number][];
+  setPossibleMoves: StateUpdater<[number, number][]>;
+  pieces: (Piece | null)[][];
+  setPieces: StateUpdater<(Piece | null)[][]>;
 };
 
 const Overlay: FunctionalComponent<OverlayProps> = (props) => {
-  let { clickedItem, setClickedItem, possibleMoves } = props;
+  let {
+    clickedItem,
+    setClickedItem,
+    possibleMoves,
+    setPossibleMoves,
+    pieces,
+    setPieces,
+  } = props;
+
+  const handleMove = (move: [number, number]) => {
+    setPieces((pieces) => {
+      let piece = pieces[clickedItem[1]][clickedItem[0]];
+      pieces[clickedItem[1]][clickedItem[0]] = null;
+      pieces[move[1]][move[0]] = piece;
+      console.log(pieces);
+      return pieces;
+    });
+
+    setClickedItem(null);
+    setPossibleMoves([]);
+  };
+
   return (
     <div className="absolute grid grid-cols-[repeat(8,1fr)] grid-rows-[repeat(8,1fr)] w-[80vh] h-[80vh]">
       <OverlayItem pos={clickedItem} onClick={() => setClickedItem(null)} />
       {possibleMoves.map((move) => (
-        <OverlayItem pos={move} active />
+        <OverlayItem pos={move} active onClick={() => handleMove(move)} />
       ))}
     </div>
   );
@@ -164,7 +190,7 @@ const rowStart: RowStart = {
   4: "row-start-5",
   5: "row-start-6",
   6: "row-start-7",
-  7: "row-start-8",
+  7: "row-start-[8]",
 };
 
 interface ColStart {
@@ -179,7 +205,7 @@ const colStart: ColStart = {
   4: "col-start-5",
   5: "col-start-6",
   6: "col-start-7",
-  7: "col-start-8",
+  7: "col-start-[8]",
 };
 
 export default Board;
