@@ -134,11 +134,11 @@ impl Pos {
                 let mut yn = 0;
                 for n in 0..8 {
                     if n != pos.x {
-                        buffer[xn] = Pos { x: n, y: pos.y };
+                        buffer[xn * 2] = Pos { x: n, y: pos.y };
                         xn += 1;
                     }
                     if n != pos.y {
-                        buffer[yn] = Pos { x: pos.x, y: n };
+                        buffer[yn * 2 + 1] = Pos { x: pos.x, y: n };
                         yn += 1;
                     }
 

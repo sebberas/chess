@@ -330,63 +330,63 @@ pub fn main() -> Result<()> {
     while game.winner.is_none() && board_value != Inf && board_value != NegInf {
         turn.invert();
         board_value = game.board.naive_value(turn);
-        //println!(
-        //    "\n\n Round {} - {turn:?} has {:?} points - {turn:?}'s turn",
-        //    round,
-        //    board_value,
-        //    turn = turn
-        //);
+        println!(
+            "\n\n Round {} - {turn:?} has {:?} points - {turn:?}'s turn",
+            round,
+            board_value,
+            turn = turn
+        );
 
-        //if turn == White {
-        let action = game.best_move(turn, 3);
-        //unsafe {
-        //    let slow =
-        //        game.board
-        //            .can_move_slow(game.board.get_unchecked(action.0).0, action.0, turn);
-        //    let fast = game
-        //        .board
-        //        .can_move(game.board.get_unchecked(action.0).0, action.0, turn);
-        //    if fast != slow {
-        //        println!(
-        //            "{}\nFAST != SLOW, when moving {:?} {}{}",
-        //            "_".repeat(20),
-        //            game.board.get_unchecked(action.0),
-        //            "ABCDEFGH".as_bytes()[action.0.x as usize] as char,
-        //            action.0.y + 1
-        //        );
+        if turn == White {
+            let action = game.best_move(turn, 3);
+            //unsafe {
+            //    let slow =
+            //        game.board
+            //            .can_move_slow(game.board.get_unchecked(action.0).0, action.0, turn);
+            //    let fast = game
+            //        .board
+            //        .can_move(game.board.get_unchecked(action.0).0, action.0, turn);
+            //    if fast != slow {
+            //        println!(
+            //            "{}\nFAST != SLOW, when moving {:?} {}{}",
+            //            "_".repeat(20),
+            //            game.board.get_unchecked(action.0),
+            //            "ABCDEFGH".as_bytes()[action.0.x as usize] as char,
+            //            action.0.y + 1
+            //        );
 
-        //        println!("FAST:");
-        //        game.board.print(fast);
+            //        println!("FAST:");
+            //        game.board.print(fast);
 
-        //        println!("\nSLOW:");
-        //        game.board.print(slow);
-        //        println!("{}", "_".repeat(20));
-        //    }
-        //}
-        game.move_piece(action);
-        //} else {
-        //    loop {
-        //        print!("your turn --> ");
-        //        stdout().flush()?;
-        //        let action_str = usr_in.next().unwrap()?.to_uppercase();
-        //        let mut action_str = action_str.chars();
-        //        //n - 41
-        //        let a = Pos {
-        //            x: action_str.next().unwrap() as i8 - 65,
-        //            y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
-        //        };
-        //        let b = Pos {
-        //            x: action_str.next().unwrap() as i8 - 65,
-        //            y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
-        //        };
+            //        println!("\nSLOW:");
+            //        game.board.print(slow);
+            //        println!("{}", "_".repeat(20));
+            //    }
+            //}
+            game.move_piece(action);
+        } else {
+            loop {
+                print!("your turn --> ");
+                stdout().flush()?;
+                let action_str = usr_in.next().unwrap()?.to_uppercase();
+                let mut action_str = action_str.chars();
+                //n - 41
+                let a = Pos {
+                    x: action_str.next().unwrap() as i8 - 65,
+                    y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
+                };
+                let b = Pos {
+                    x: action_str.next().unwrap() as i8 - 65,
+                    y: format!("{}", action_str.next().unwrap()).parse::<i8>()? - 1,
+                };
 
-        //        if game.move_piece((a, b)) {
-        //            break;
-        //        }
-        //    }
-        //}
+                if game.move_piece((a, b)) {
+                    break;
+                }
+            }
+        }
 
-        //game.board.print(None);
+        game.board.print(vec![]);
         round += 1;
     }
     Ok(())
