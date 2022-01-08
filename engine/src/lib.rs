@@ -367,6 +367,16 @@ pub fn board_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
 }
 
 #[wasm_bindgen]
+pub fn board_valid_moves(board: &mut GameState, piece: Piece, pos: Pos, color: Color) -> Vec<i8> {
+    board
+        .get_valid_moves(color)
+        .filter(|moves| moves.0 == pos && unsafe { piece == board.board.get_unchecked(moves.0).0 })
+        .map(|moves| moves.1.parts())
+        .flatten()
+        .collect()
+}
+
+#[wasm_bindgen]
 pub fn board_is_valid_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
     if a.is_invalid() || b.is_invalid() {
         return false;
@@ -381,7 +391,7 @@ pub fn board_is_valid_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
 
 #[wasm_bindgen]
 pub fn new_pos(x: i8, y: i8) -> Pos {
-    Pos { x, y }
+    Pos { x, y }.clone()
 }
 
 // Main function for debugging
@@ -482,8 +492,4 @@ pub fn main() -> Result<()> {
         round += 1;
     }
     Ok(())
-}
-
-pub fn hello_world() {
-    unsafe { log("hello, world!") };
 }
