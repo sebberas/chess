@@ -23,7 +23,23 @@ import {
   board_move,
   board_valid_moves,
   GameState,
+  get_best_move,
 } from "../engine/pkg/crab_engine";
+
+const extractMoves = (arr: Int8Array): [number, number][] => {
+  if (arr.length === 0) {
+    return [];
+  }
+
+  let temp: [number, number][] = [];
+  let view = new DataView(arr.buffer);
+  // Vi ved at moves altid kommer i par af 2
+  for (let i = 0; i < arr.length; i += 2) {
+    temp.push([view.getInt8(i), view.getInt8(i + 1)]);
+  }
+
+  return temp;
+};
 
 type Piece = {
   color: Color;
@@ -128,6 +144,7 @@ const Board: FunctionalComponent = () => {
   const [pieces, setPieces] = useState<(Piece | null)[][]>(initPieces());
   const [clickedItem, setClickedItem] = useState<[number, number] | null>(null);
   const [possibleMoves, setPossibleMoves] = useState<[number, number][]>([]);
+  const [ai, SetAi] = useState(true);
 
   const changeTurn = () => {
     SetTurn((prev) => {
@@ -147,24 +164,41 @@ const Board: FunctionalComponent = () => {
         let pos = new_pos(clickedItem[0], clickedItem[1]);
 
         // let moves = valid_moves(piece.type, pos, piece.color);
-        let moves = board_valid_moves(board, piece.type, pos, piece.color);
-        if (moves.length > 0) {
-          let view = new DataView(moves.buffer);
-          let temp: [number, number][] = [];
-          for (let i = 0; i < moves.length; i += 2) {
-            temp.push([view.getInt8(i), view.getInt8(i + 1)]);
-          }
+        let moves = extractMoves(
+          board_valid_moves(board, piece.type, pos, piece.color)
+        );
 
-          return setPossibleMoves(temp);
-        }
-
-        setPossibleMoves([]);
-      }
-
-      if (piece !== null) {
+        setPossibleMoves(moves);
       }
     }
   }, [clickedItem]);
+
+  useEffect(() => {
+    console.log(turn);
+    if (turn == Color.Black) {
+      let bestMove = get_best_move(board.board, Color.Black, 3);
+      console.log(bestMove);
+      let from = new_pos(bestMove[0], bestMove[1]);
+      let to = new_pos(bestMove[2], bestMove[3]);
+      board_move(board, from, to);
+
+      setPieces((pieces) => {
+        let piece = pieces[bestMove[1]][bestMove[0]];
+        console.log(piece);
+        pieces[bestMove[1]][bestMove[0]] = null;
+        pieces[bestMove[3]][bestMove[2]] = piece;
+        console.log(pieces);
+        return pieces;
+      });
+
+      changeTurn();
+    }
+    // if (ai) {
+    //   let best_move = get_best_move(board, Color.Black, 24);
+    //   let view = new DataView(best_move.buffer);
+    //   let temp: [number, number][] = [];
+    // }
+  }, [turn]);
 
   return (
     <div className="mt-6 w-full flex justify-center relative">
