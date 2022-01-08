@@ -87,12 +87,12 @@ pub fn valid_moves(piece: Piece, pos: Pos, color: Color) -> Vec<i8> {
 }
 
 impl Pos {
-    //creating valid chessmoves for the pieces, so the AI will know what it is able to do with the different pieces
+    // Where can we move? Where can the AI move? Let's find out!
     pub fn valid_moves(&self, piece: Piece, color: Color) -> Box<[Pos]> {
         let pos = self;
 
         match piece {
-            //writing the pawn. Hardcoding the doublemove a pawn is able to do when it hasn't moved yet, therefore this is the only piece that needs to know what color it is before moving
+            // Hardcoding doublemove that pawn is able to do when it hasn't moved yet. Pawn is the only piece that needs to know it's color when moving.
             Piece::Pawn => {
                 let mut buffer: Box<[Pos]> = unsafe {
                     if (color == White && pos.y == 1) || (color == Black && pos.y == 6) {
@@ -127,6 +127,7 @@ impl Pos {
                 }
                 buffer
             }
+
             // writing the Queen, which is a combination of the Rook and the Bishop
             Piece::Queen => {
                 let mut buffer = Box::new([unsafe { mem::zeroed() }; 7 * 2 + 7 * 4]);
@@ -167,6 +168,7 @@ impl Pos {
                 }
                 buffer
             }
+
             //writing the king, who is hardcoded to only move one space at a time, in a circle around the king
             Piece::King => Box::new([
                 Pos {

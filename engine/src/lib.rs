@@ -327,6 +327,7 @@ pub fn main() -> Result<()> {
     let stdin = std::io::stdin();
     let mut usr_in = stdin.lock().lines();
 
+    println!("{:?}", Pos { x: 4, y: 1 }.valid_moves(Piece::Queen, Black));
     while game.winner.is_none() && board_value != Inf && board_value != NegInf {
         turn.invert();
         board_value = game.board.naive_value(turn);
