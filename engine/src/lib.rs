@@ -58,11 +58,9 @@ impl Board {
 //    }
 //}
 
-mod sqrts;
+pub mod vcl;
 impl Board {
     fn can_move(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
-        use sqrts::*;
-
         let mut buffer: Vec<_> = pos
             .valid_moves(piece, color)
             .iter()
@@ -82,24 +80,8 @@ impl Board {
 
         let mut dead_vecs: Vec<(i8, i8, i8, Color)> = vec![];
 
-        let vector_comp = |pos: &Pos, mv: &Pos| -> (i8, i8, i8) {
-            let dx = pos.x - mv.x;
-            let dy = pos.y - mv.y;
-
-            let mut comps = unsafe {
-                // The magic of vector component lookup tables (which is something i just made up)
-                // lets us avoid wasting cpu time on calculating the square root of the same number over and over again.
-                *COMPS
-                    .get_unchecked(dx.unsigned_abs() as usize)
-                    .get_unchecked(dy.unsigned_abs() as usize)
-            };
-            comps.0 *= dx.signum(); // Sign copying so we don't need a big symetrical lookup table.
-            comps.1 *= dy.signum();
-            comps
-        };
-
         for &mv in &buffer {
-            let (dx, dy, len) = vector_comp(&pos, &mv);
+            let (dx, dy, len) = vcl::vector_comp(&pos, &mv);
             unsafe {
                 if self.get_unchecked(mv).0 != Piece::None {
                     dead_vecs.push((dx, dy, len, self.get_unchecked(mv).1));
@@ -113,7 +95,7 @@ impl Board {
                 if mv.x > 8 || mv.x < 0 || mv.y > 8 || mv.y < 0 {
                     return false;
                 }
-                let (dx, dy, len) = vector_comp(&pos, mv);
+                let (dx, dy, len) = vcl::vector_comp(&pos, mv);
                 !dead_vecs.iter().any(|(x, y, slen, scolor)| {
                     if *scolor == color || piece == Piece::Pawn {
                         *x == dx && *y == dy && len >= *slen
@@ -151,90 +133,6 @@ impl Board {
 
         buffer
     }
-
-    //fn can_move_slow(&self, piece: Piece, pos: Pos, color: Color) -> Vec<Pos> {
-    //    let mut buffer: Vec<_> = pos
-    //        .valid_moves(piece, color)
-    //        .iter()
-    //        .filter(|mv| !mv.is_invalid())
-    //        .copied()
-    //        .collect();
-
-    //    if piece == Piece::Knight {
-    //        return buffer
-    //            .iter()
-    //            .filter(|&&mv| unsafe {
-    //                self.get_unchecked(mv).1 != color || self.get_unchecked(mv).0 == Piece::None
-    //            })
-    //            .copied()
-    //            .collect();
-    //    }
-
-    //    let mut dead_vecs: Vec<(f32, f32, f32, Color)> = vec![];
-
-    //    let vector_comp = |pos: &Pos, mv: &Pos| -> (f32, f32, f32) {
-    //        let mut dx = (pos.x - mv.x) as f32;
-    //        let mut dy = (pos.y - mv.y) as f32;
-
-    //        let len = ((dx.powi(2) + dy.powi(2)) as f32).sqrt();
-    //        dx = if len == 0. { 0. } else { dx / len };
-    //        dy = if len == 0. { 0. } else { dy / len };
-    //        (dx.round(), dy.round(), len)
-    //    };
-
-    //    for &mv in &buffer {
-    //        let (dx, dy, len) = vector_comp(&pos, &mv);
-    //        unsafe {
-    //            if self.get_unchecked(mv).0 != Piece::None {
-    //                dead_vecs.push((dx, dy, len, self.get_unchecked(mv).1));
-    //            }
-    //        }
-    //    }
-
-    //    buffer = buffer
-    //        .iter()
-    //        .filter(move |mv| {
-    //            if mv.x > 8 || mv.x < 0 || mv.y > 8 || mv.y < 0 {
-    //                return false;
-    //            }
-    //            let (dx, dy, len) = vector_comp(&pos, mv);
-    //            !dead_vecs.iter().any(|(x, y, slen, scolor)| {
-    //                if *scolor == color || piece == Piece::Pawn {
-    //                    *x == dx && *y == dy && len >= *slen
-    //                } else {
-    //                    *x == dx && *y == dy && len > *slen
-    //                }
-    //            })
-    //        })
-    //        .copied()
-    //        .collect();
-
-    //    if piece == Piece::Pawn {
-    //        let mv_dir = if color == Black { -1 } else { 1 };
-    //        let mv_pos = [
-    //            Pos {
-    //                x: pos.x + 1,
-    //                y: pos.y + mv_dir,
-    //            },
-    //            Pos {
-    //                x: pos.x - 1,
-    //                y: pos.y + mv_dir,
-    //            },
-    //        ];
-
-    //        for mv in mv_pos {
-    //            if mv.is_invalid() {
-    //                continue;
-    //            }
-    //            let p = unsafe { self.get_unchecked(mv) };
-    //            if p.0 != Piece::None && p.1 != color {
-    //                buffer.push(mv)
-    //            }
-    //        }
-    //    }
-
-    //    buffer
-    //}
 
     // returns true and moves piece if move is valid. Else returns false and does not move piece.
     pub fn move_piece(&mut self, mv: Move) -> bool {

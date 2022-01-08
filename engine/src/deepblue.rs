@@ -12,17 +12,16 @@ pub struct GameState {
 impl GameState {
     pub fn get_valid_moves(&self, color: Color) -> impl Iterator<Item = Move> + '_ {
         (0..8 * 8)
-            .into_iter()
             .filter_map(move |n| {
                 let x = n % 8;
-                let y = (n - x) / 8;
+                let y = n / 8;
                 let pos = Pos {
                     x: x as i8,
                     y: y as i8,
                 };
 
                 unsafe {
-                    let p = self.board.get_unchecked(pos); // p is always valid, because it has a known range of x: 0..8 and y: 0.8
+                    let p = self.board.get_unchecked(pos);
                     if p.1 != color || p.0 == Piece::None {
                         return None;
                     }
