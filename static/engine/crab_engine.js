@@ -20,6 +20,13 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
+}
+
 let cachegetInt32Memory0 = null;
 function getInt32Memory0() {
     if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
@@ -28,41 +35,144 @@ function getInt32Memory0() {
     return cachegetInt32Memory0;
 }
 
-let cachegetUint16Memory0 = null;
-function getUint16Memory0() {
-    if (cachegetUint16Memory0 === null || cachegetUint16Memory0.buffer !== wasm.memory.buffer) {
-        cachegetUint16Memory0 = new Uint16Array(wasm.memory.buffer);
+let cachegetInt8Memory0 = null;
+function getInt8Memory0() {
+    if (cachegetInt8Memory0 === null || cachegetInt8Memory0.buffer !== wasm.memory.buffer) {
+        cachegetInt8Memory0 = new Int8Array(wasm.memory.buffer);
     }
-    return cachegetUint16Memory0;
+    return cachegetInt8Memory0;
 }
 
-function getArrayU16FromWasm0(ptr, len) {
-    return getUint16Memory0().subarray(ptr / 2, ptr / 2 + len);
+function getArrayI8FromWasm0(ptr, len) {
+    return getInt8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 /**
+* Returns a list of places a piece can move, when at a specific position
 * @param {number} piece
-* @param {number} pos
+* @param {Pos} pos
 * @param {number} color
-* @returns {Uint16Array}
+* @returns {Int8Array}
 */
 export function valid_moves(piece, pos, color) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.valid_moves(retptr, piece, pos, color);
+        _assertClass(pos, Pos);
+        var ptr0 = pos.ptr;
+        pos.ptr = 0;
+        wasm.valid_moves(retptr, piece, ptr0, color);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
-        var v0 = getArrayU16FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_free(r0, r1 * 2);
-        return v0;
+        var v1 = getArrayI8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_free(r0, r1 * 1);
+        return v1;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }
 }
 
 /**
+* @returns {GameState}
 */
-export function hello_world() {
-    wasm.hello_world();
+export function default_board() {
+    var ret = wasm.default_board();
+    return GameState.__wrap(ret);
+}
+
+/**
+* @param {GameState} board
+* @param {Pos} a
+* @param {Pos} b
+* @returns {boolean}
+*/
+export function board_move(board, a, b) {
+    _assertClass(board, GameState);
+    _assertClass(a, Pos);
+    var ptr0 = a.ptr;
+    a.ptr = 0;
+    _assertClass(b, Pos);
+    var ptr1 = b.ptr;
+    b.ptr = 0;
+    var ret = wasm.board_move(board.ptr, ptr0, ptr1);
+    return ret !== 0;
+}
+
+/**
+* @param {GameState} board
+* @param {number} piece
+* @param {Pos} pos
+* @param {number} color
+* @returns {Int8Array}
+*/
+export function board_valid_moves(board, piece, pos, color) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        _assertClass(board, GameState);
+        _assertClass(pos, Pos);
+        var ptr0 = pos.ptr;
+        pos.ptr = 0;
+        wasm.board_valid_moves(retptr, board.ptr, piece, ptr0, color);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        var v1 = getArrayI8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_free(r0, r1 * 1);
+        return v1;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
+* @param {GameState} board
+* @param {Pos} a
+* @param {Pos} b
+* @returns {boolean}
+*/
+export function board_is_valid_move(board, a, b) {
+    _assertClass(board, GameState);
+    _assertClass(a, Pos);
+    var ptr0 = a.ptr;
+    a.ptr = 0;
+    _assertClass(b, Pos);
+    var ptr1 = b.ptr;
+    b.ptr = 0;
+    var ret = wasm.board_is_valid_move(board.ptr, ptr0, ptr1);
+    return ret !== 0;
+}
+
+/**
+* @param {number} x
+* @param {number} y
+* @returns {Pos}
+*/
+export function new_pos(x, y) {
+    var ret = wasm.new_pos(x, y);
+    return Pos.__wrap(ret);
+}
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+/**
+* @param {Board} board
+* @param {number} color
+* @param {number} depth
+* @returns {Int8Array}
+*/
+export function get_best_move(board, color, depth) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        _assertClass(board, Board);
+        var ptr0 = board.ptr;
+        board.ptr = 0;
+        wasm.get_best_move(retptr, ptr0, color, depth);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        var v1 = getArrayI8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_free(r0, r1 * 1);
+        return v1;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
 }
 
 /**
@@ -75,6 +185,13 @@ export const Color = Object.freeze({ White:0,"0":"White",Black:1,"1":"Black", })
 */
 export class Board {
 
+    static __wrap(ptr) {
+        const obj = Object.create(Board.prototype);
+        obj.ptr = ptr;
+
+        return obj;
+    }
+
     __destroy_into_raw() {
         const ptr = this.ptr;
         this.ptr = 0;
@@ -85,6 +202,143 @@ export class Board {
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_board_free(ptr);
+    }
+}
+/**
+*/
+export class GameState {
+
+    static __wrap(ptr) {
+        const obj = Object.create(GameState.prototype);
+        obj.ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_gamestate_free(ptr);
+    }
+    /**
+    */
+    get board() {
+        var ret = wasm.__wbg_get_gamestate_board(this.ptr);
+        return Board.__wrap(ret);
+    }
+    /**
+    * @param {Board} arg0
+    */
+    set board(arg0) {
+        _assertClass(arg0, Board);
+        var ptr0 = arg0.ptr;
+        arg0.ptr = 0;
+        wasm.__wbg_set_gamestate_board(this.ptr, ptr0);
+    }
+    /**
+    */
+    get winner() {
+        var ret = wasm.__wbg_get_gamestate_winner(this.ptr);
+        return ret === 2 ? undefined : ret;
+    }
+    /**
+    * @param {number | undefined} arg0
+    */
+    set winner(arg0) {
+        wasm.__wbg_set_gamestate_winner(this.ptr, isLikeNone(arg0) ? 2 : arg0);
+    }
+}
+/**
+*/
+export class JsPos {
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_jspos_free(ptr);
+    }
+    /**
+    */
+    get x() {
+        var ret = wasm.__wbg_get_jspos_x(this.ptr);
+        return ret;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set x(arg0) {
+        wasm.__wbg_set_jspos_x(this.ptr, arg0);
+    }
+    /**
+    */
+    get y() {
+        var ret = wasm.__wbg_get_jspos_y(this.ptr);
+        return ret;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set y(arg0) {
+        wasm.__wbg_set_jspos_y(this.ptr, arg0);
+    }
+}
+/**
+*/
+export class Pos {
+
+    static __wrap(ptr) {
+        const obj = Object.create(Pos.prototype);
+        obj.ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_pos_free(ptr);
+    }
+    /**
+    */
+    get x() {
+        var ret = wasm.__wbg_get_pos_x(this.ptr);
+        return ret;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set x(arg0) {
+        wasm.__wbg_set_pos_x(this.ptr, arg0);
+    }
+    /**
+    */
+    get y() {
+        var ret = wasm.__wbg_get_pos_y(this.ptr);
+        return ret;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set y(arg0) {
+        wasm.__wbg_set_pos_y(this.ptr, arg0);
     }
 }
 
@@ -125,9 +379,6 @@ async function init(input) {
     }
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbg_log_696423c9218a3df0 = function(arg0, arg1) {
-        console.log(getStringFromWasm0(arg0, arg1));
-    };
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
