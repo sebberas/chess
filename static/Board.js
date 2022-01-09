@@ -19,8 +19,10 @@ import {
   new_pos,
   board_move,
   board_valid_moves,
-  get_best_move
+  get_best_move,
+  board_winner
 } from "./engine/crab_engine.js";
+import {Opponent} from "./App.js";
 const extractMoves = (arr) => {
   if (arr.length === 0) {
     return [];
@@ -103,14 +105,26 @@ const initPieces = () => {
   ];
   return pieces;
 };
-const Board = () => {
+const Board = ({level, opponent}) => {
   const [turn, SetTurn] = useState(Color.White);
   const [board, setBoard] = useState(default_board());
   const [pieces, setPieces] = useState(initPieces());
   const [clickedItem, setClickedItem] = useState(null);
   const [possibleMoves, setPossibleMoves] = useState([]);
-  const [ai, SetAi] = useState(true);
   const changeTurn = () => {
+    let winner = board_winner(board);
+    if (winner !== "none") {
+      setTimeout(() => {
+        switch (winner) {
+          case "black":
+            window.alert("Sort har vundet!");
+            break;
+          case "white":
+            window.alert("Hvid har vundet!");
+            break;
+        }
+      }, 100);
+    }
     SetTurn((prev) => {
       if (prev === Color.White) {
         return Color.Black;
@@ -129,19 +143,15 @@ const Board = () => {
     }
   }, [clickedItem]);
   useEffect(() => {
-    console.log(turn);
-    if (turn == Color.Black) {
-      let bestMove = get_best_move(board.board, Color.Black, 3);
-      console.log(bestMove);
+    if (turn === Color.Black && opponent === Opponent.SinglePlayer) {
+      let bestMove = get_best_move(board.board, Color.Black, level);
       let from = new_pos(bestMove[0], bestMove[1]);
       let to = new_pos(bestMove[2], bestMove[3]);
       board_move(board, from, to);
       setPieces((pieces2) => {
         let piece = pieces2[bestMove[1]][bestMove[0]];
-        console.log(piece);
         pieces2[bestMove[1]][bestMove[0]] = null;
         pieces2[bestMove[3]][bestMove[2]] = piece;
-        console.log(pieces2);
         return pieces2;
       });
       changeTurn();

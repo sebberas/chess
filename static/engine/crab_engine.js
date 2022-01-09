@@ -140,6 +140,24 @@ export function board_is_valid_move(board, a, b) {
 }
 
 /**
+* @param {GameState} board
+* @returns {string}
+*/
+export function board_winner(board) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        _assertClass(board, GameState);
+        wasm.board_winner(retptr, board.ptr);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        return getStringFromWasm0(r0, r1);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_free(r0, r1);
+    }
+}
+
+/**
 * @param {number} x
 * @param {number} y
 * @returns {Pos}
