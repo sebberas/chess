@@ -39,6 +39,7 @@ impl GameState {
             .flatten()
     }
 
+    // Finder det bedste move.
     pub fn best_move(&mut self, color: Color, depth: usize) -> Move {
         let mut alpha = NegInf;
         let mut beta = Inf;
@@ -152,6 +153,8 @@ pub enum Value {
 
 use Value::*;
 
+// Værdierne for de forskellige brikker.
+// Dette bruges af den kunstige intelligens til at udregne hvilke brikker den skal tage.
 pub fn piece_value(p: Piece) -> i32 {
     use Piece::*;
     match p {
@@ -193,6 +196,7 @@ impl Board {
 }
 
 #[wasm_bindgen]
+// Retunerer en flad liste der indeholder det bedste move. Den retunerede array: [x1, y1, x2, y2].
 pub fn get_best_move(board: Board, color: Color, depth: usize) -> Box<[i8]> {
     let mut game = GameState {
         board,

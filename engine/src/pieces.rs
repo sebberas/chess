@@ -53,13 +53,16 @@ pub struct JsPos {
     pub y: f64,
 }
 
+// Type-alias for fra og til position.
 pub type Move = (Pos, Pos);
 
 impl Pos {
+    // Tjekker om Positionen er indenfor brættet.
     pub fn is_invalid(&self) -> bool {
         self.x < 0 || self.y < 0 || self.x >= 8 || self.y >= 8
     }
 
+    // Konstruerer en Pos fra en flad liste.
     pub fn from_parts(pos: [i8; 2]) -> Self {
         let tmp = Self {
             x: pos[0],
@@ -70,6 +73,8 @@ impl Pos {
         }
         tmp
     }
+
+    // Konverterer Pos til en flad liste.
     pub fn parts(&self) -> [i8; 2] {
         [self.x, self.y]
     }
@@ -128,7 +133,7 @@ impl Pos {
                 buffer
             }
 
-            // writing the Queen, which is a combination of the Rook and the Bishop
+            // Writing the Queen, which is a combination of the Rook and the Bishop
             Piece::Queen => {
                 let mut buffer = Box::new([unsafe { mem::zeroed() }; 7 * 2 + 7 * 4]);
                 let mut xn = 0;
@@ -251,7 +256,7 @@ impl Pos {
                 buffer
             }
 
-            //writing the knight, because of the piece's special way to move, it made sense to make it check for validmoves by turning the board into a matrix
+            // Writing the knight, because of the piece's special way to move, it made sense to make it check for validmoves by turning the board into a matrix
             Piece::Knight => Box::new([
                 Pos {
                     x: -2 + pos.x,
@@ -287,7 +292,7 @@ impl Pos {
                 },
             ]),
 
-            //making sure that spot on the board without a piece is read correctly
+            // Making sure that spot on the board without a piece is read correctly
             Piece::None => Box::new([]),
         }
     }

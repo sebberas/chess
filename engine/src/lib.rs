@@ -26,12 +26,14 @@ use crate::deepblue::Value;
 pub struct Board([[(Piece, Color); 8]; 8]);
 
 impl Board {
+    // Retunerer en brik i på brættet, som ikke nødvendigvis eksisterer.
     pub unsafe fn get_unchecked(&self, p: Pos) -> &(Piece, Color) {
         self.0
             .get_unchecked(p.x as usize)
             .get_unchecked(p.y as usize)
     }
 
+    // Retunerer en mutable brik i på brættet, som ikke nødvendigvis eksisterer.
     pub unsafe fn get_unchecked_mut(&mut self, p: Pos) -> &mut (Piece, Color) {
         self.0
             .get_unchecked_mut(p.x as usize)
@@ -254,18 +256,22 @@ impl std::default::Default for Board {
 }
 
 #[wasm_bindgen]
+// Konstruerer et ny GameState.
 pub fn default_board() -> GameState {
     GameState::default()
 }
 
 #[wasm_bindgen]
+// Wasm-kompatibel funktion, der kalder move_piece() metoden internt.
 pub fn board_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
     //let pos = Pos::from_u16(pos);
     board.move_piece((a, b))
 }
 
 #[wasm_bindgen]
+// Retunerer alle valide moves på brættet
 pub fn board_valid_moves(board: &mut GameState, piece: Piece, pos: Pos, color: Color) -> Vec<i8> {
+    // .flatten() konverterer (x, y) til en [i8; 2].
     board
         .get_valid_moves(color)
         .filter(|moves| moves.0 == pos && unsafe { piece == board.board.get_unchecked(moves.0).0 })
@@ -275,6 +281,7 @@ pub fn board_valid_moves(board: &mut GameState, piece: Piece, pos: Pos, color: C
 }
 
 #[wasm_bindgen]
+// Tjekker om et ryk er validt ift. de andre brikker på brættet.
 pub fn board_is_valid_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
     if a.is_invalid() || b.is_invalid() {
         return false;
