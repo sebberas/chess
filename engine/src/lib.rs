@@ -288,6 +288,17 @@ pub fn board_is_valid_move(board: &mut GameState, a: Pos, b: Pos) -> bool {
 }
 
 #[wasm_bindgen]
+pub fn board_winner(board: &mut GameState) -> String {
+    match board.winner {
+        Some(color) => match color {
+            Color::Black => "black".to_owned(),
+            _ => "white".to_owned(),
+        },
+        None => "none".to_owned(),
+    }
+}
+
+#[wasm_bindgen]
 pub fn new_pos(x: i8, y: i8) -> Pos {
     Pos { x, y }.clone()
 }
